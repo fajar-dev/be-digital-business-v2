@@ -4,6 +4,7 @@ import { sign, verify } from 'hono/jwt';
 import { EmployeeService } from "../service/employee.service";
 import { config } from "../config/app";
 import { ApiResponse } from "../helper/response";
+import { UnauthorizedException, NotFoundException, BadRequestException } from "../helper/exception";
 import axios from "axios";
 
 export class AuthController {
@@ -53,145 +54,129 @@ export class AuthController {
     }
 
     async login(c: Context) {
+        const body = await c.req.json();
+        
+        let isVerify;
         try {
-            const body = await c.req.json();
-            const isVerify = await axios.post(config.auth.apiUrl, {
+            isVerify = await axios.post(config.auth.apiUrl, {
                 username: body.employeeId,
                 password: body.password
             });
-
-            if(isVerify.status !== 201) {
-                return ApiResponse.error(c, 'Employee ID or password is not valid', 401);
-            }
-            const employee = await this.employeeService.getEmployeeByEmployeeId(body.employeeId) as any;
-            
-            if(!employee) {
-                return ApiResponse.error(c, 'Employee not found', 404);
-            }
-
-            const tokens = await this.generateToken(employee);
-            
-            return ApiResponse.success(c, {
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
-                user: employee
-            }, "Login successful");
-
         } catch (error: any) {
-            const status = error.response?.status || 500;
-            return ApiResponse.error(c, 'Login failed', status, { error: error.message });
+            throw new UnauthorizedException('Employee ID or password is not valid');
         }
+
+        if(isVerify.status !== 201) {
+            throw new UnauthorizedException('Employee ID or password is not valid');
+        }
+        
+        const employee = await this.employeeService.getEmployeeByEmployeeId(body.employeeId) as any;
+        
+        if(!employee) {
+            throw new NotFoundException('Employee not found');
+        }
+
+        const tokens = await this.generateToken(employee);
+        
+        return ApiResponse.success(c, {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            user: employee
+        }, "Login successful");
     }
 
     async devLogin(c: Context) {
-        try {
-            const body = await c.req.json();
-            const employee = await this.employeeService.getEmployeeByEmployeeId(body.employeeId) as any;
-            
-            if(!employee) {
-                return ApiResponse.error(c, 'Employee not found', 404);
-            }
-
-            const tokens = await this.generateToken(employee);
-            
-            return ApiResponse.success(c, {
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
-                user: employee
-            }, "Login successful");
-
-        } catch (error: any) {
-            const status = error.response?.status || 500;
-            return ApiResponse.error(c, 'Login failed', status, { error: error.message });
+        const body = await c.req.json();
+        const employee = await this.employeeService.getEmployeeByEmployeeId(body.employeeId) as any;
+        
+        if(!employee) {
+            throw new NotFoundException('Employee not found');
         }
+
+        const tokens = await this.generateToken(employee);
+        
+        return ApiResponse.success(c, {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            user: employee
+        }, "Login successful");
     }
 
     async google(c: Context) {
-        try {
-            const body = await c.req.json();
-            const payload = await this.verify(body.code);
-            const employee = await this.employeeService.getEmployeeByEmail(payload.email) as any;
-            
-            if(!employee) {
-                return ApiResponse.error(c, 'Employee not found', 404);
-            }
-
-            const tokens = await this.generateToken(employee);
-            
-            return ApiResponse.success(c, {
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
-                user: employee
-            }, "Login successful");
-
-        } catch (error: any) {
-            return ApiResponse.error(c, 'Login failed', 500, { error: error.message });
+        const body = await c.req.json();
+        const payload = await this.verify(body.code);
+        const employee = await this.employeeService.getEmployeeByEmail(payload.email) as any;
+        
+        if(!employee) {
+            throw new NotFoundException('Employee not found');
         }
+
+        const tokens = await this.generateToken(employee);
+        
+        return ApiResponse.success(c, {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            user: employee
+        }, "Login successful");
     }
 
     async refresh(c: Context) {
-        try {
-            const body = await c.req.json();
-            const refreshToken = body.refreshToken;
+        const body = await c.req.json();
+        const refreshToken = body.refreshToken;
 
-            if (!refreshToken) {
-                return ApiResponse.error(c, 'Refresh token is required', 400);
-            }
-
-            try {
-                const payload = await verify(refreshToken, config.auth.jwtSecret, 'HS256');
-                const email = payload.email as string;
-                
-                const employee = await this.employeeService.getEmployeeByEmail(email) as any;
-                if (!employee) {
-                    return ApiResponse.error(c, 'User not found', 401);
-                }
-
-                const tokens = await this.generateToken(employee);
-
-                return ApiResponse.success(c, {
-                    accessToken: tokens.accessToken,
-                    refreshToken: tokens.refreshToken,
-                    user: employee
-                }, "Token refreshed");
-
-            } catch (err) {
-                return ApiResponse.error(c, 'Invalid refresh token', 401);
-            }
-        } catch (error: any) {
-            return ApiResponse.error(c, 'Refresh failed', 500, { error: error.message });
+        if (!refreshToken) {
+            throw new BadRequestException('Refresh token is required');
         }
+
+        let payload;
+        try {
+            payload = await verify(refreshToken, config.auth.jwtSecret, 'HS256');
+        } catch (err) {
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+        
+        const email = payload.email as string;
+        
+        const employee = await this.employeeService.getEmployeeByEmail(email) as any;
+        if (!employee) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        const tokens = await this.generateToken(employee);
+
+        return ApiResponse.success(c, {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            user: employee
+        }, "Token refreshed");
     }
 
     async me(c: Context) {
-        try {
-            const authHeader = c.req.header('Authorization');
-            if (!authHeader) {
-                return ApiResponse.error(c, 'Authorization header missing', 401);
-            }
-
-            const token = authHeader.split(' ')[1];
-            if (!token) {
-                return ApiResponse.error(c, 'Token missing', 401);
-            }
-
-            try {
-                const payload = await verify(token, config.auth.jwtSecret, 'HS256');
-                const email = payload.email as string;
-                const employee = await this.employeeService.getEmployeeByEmail(email) as any;
-
-                if (!employee) {
-                    return ApiResponse.error(c, 'User not found', 404);
-                }
-
-                return ApiResponse.success(c, employee, "User retrieved");
-            } catch (err) {
-                 return ApiResponse.error(c, 'Invalid token', 401);
-            }
-
-        } catch (error: any) {
-            return ApiResponse.error(c, 'Failed to get user', 500, { error: error.message });
+        const authHeader = c.req.header('Authorization');
+        if (!authHeader) {
+            throw new UnauthorizedException('Authorization header missing');
         }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            throw new UnauthorizedException('Token missing');
+        }
+
+        let payload;
+        try {
+            payload = await verify(token, config.auth.jwtSecret, 'HS256');
+        } catch (err) {
+            throw new UnauthorizedException('Invalid token');
+        }
+        
+        const email = payload.email as string;
+        const employee = await this.employeeService.getEmployeeByEmail(email) as any;
+
+        if (!employee) {
+            throw new NotFoundException('User not found');
+        }
+
+        return ApiResponse.success(c, employee, "User retrieved");
     }
 
     async logout(c: Context) {
