@@ -117,7 +117,7 @@ export class EmployeeService {
                 UNION ALL
                 
                 SELECT e.*, eh.depth + 1
-                FROM employee e
+                FROM employees e
                 INNER JOIN employee_hierarchy eh ON e.manager_id = eh.id
             )
             SELECT * 

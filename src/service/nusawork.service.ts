@@ -92,6 +92,32 @@ export class NusaworkService {
     }
 
     /**
+     * Ambil daftar Implementator Nusawork dari Nusawork.
+     */
+    async getImplementator(): Promise<Employee[]> {
+        const employees = await this.getEmployees();
+
+        const accountManager = employees.filter((emp: any) =>
+            emp.job_position === 'Nusawork Product Manager'
+            || emp.job_position === 'Implementator Nusawork'
+        );
+
+        return accountManager.map((emp: any) => ({
+            userId: emp.user_id,
+            employeeId: emp.employee_id,
+            name: emp.full_name,
+            email: emp.email,
+            photoProfile: emp.photo_profile,
+            jobPosition: emp.job_position,
+            organizationName: emp.organization_name,
+            jobLevel: emp.job_level,
+            branch: emp.branch_name,
+            managerId: emp.id_report_to_value,
+            hasDashboard: emp.job_position !== 'Nusawork Product Manager',
+        }));
+    }
+
+    /**
      * Ambil daftar employee admin dari Nusawork.
      */
     async getEmployeeAdmin(): Promise<Employee[]> {

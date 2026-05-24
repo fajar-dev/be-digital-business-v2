@@ -19,8 +19,12 @@ async function syncEmployees() {
         const adminEmployees = await nusaworkService.getEmployeeAdmin();
         console.log(`[SYNC] Found ${adminEmployees.length} Admin employees.`);
 
+        console.log('[SYNC] Fetching Implementator employees...');
+        const implementatorEmployees = await nusaworkService.getImplementator();
+        console.log(`[SYNC] Found ${implementatorEmployees.length} Implementator employees.`);
+
         // Combine both lists
-        const allEmployees = [...salesEmployees, ...adminEmployees];
+        const allEmployees = [...salesEmployees, ...adminEmployees, ...implementatorEmployees];
         
         // Remove duplicates if any (based on employeeId)
         const uniqueEmployeesMap = new Map();
