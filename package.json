@@ -1,0 +1,17 @@
+{
+  "name": "be-v2",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "sync:employee": "bun run src/job/employee.job.ts"
+  },
+  "dependencies": {
+    "axios": "^1.16.1",
+    "date-fns": "^4.3.0",
+    "google-auth-library": "^10.6.2",
+    "hono": "^4.12.21",
+    "mysql2": "^3.22.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
