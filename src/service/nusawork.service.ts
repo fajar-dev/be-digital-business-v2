@@ -12,6 +12,7 @@ export interface Employee {
     jobLevel: string;
     branch: string;
     managerId: number | string | null;
+    hasDashboard?: boolean;
 }
 
 export class NusaworkService {

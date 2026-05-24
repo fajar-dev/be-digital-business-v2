@@ -9,7 +9,10 @@ async function syncEmployees() {
     
     try {
         console.log('[SYNC] Fetching Sales Digital employees...');
-        const salesEmployees = await nusaworkService.getSalesDigital();
+        const salesEmployees = (await nusaworkService.getSalesDigital()).map(emp => ({
+            ...emp,
+            hasDashboard: true
+        }));
         console.log(`[SYNC] Found ${salesEmployees.length} Sales Digital employees.`);
 
         console.log('[SYNC] Fetching Admin employees...');

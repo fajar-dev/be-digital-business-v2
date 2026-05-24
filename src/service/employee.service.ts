@@ -17,9 +17,10 @@ export class EmployeeService {
                 organization_name,
                 job_level,
                 branch,
-                manager_id
+                manager_id,
+                has_dashboard
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 employee_id = VALUES(employee_id),
                 name = VALUES(name),
@@ -29,7 +30,8 @@ export class EmployeeService {
                 organization_name = VALUES(organization_name),
                 job_level = VALUES(job_level),
                 branch = VALUES(branch),
-                manager_id = VALUES(manager_id)
+                manager_id = VALUES(manager_id),
+                has_dashboard = VALUES(has_dashboard)
         `;
 
         const [rows] = await dashboardPool.query(query, [
@@ -42,7 +44,8 @@ export class EmployeeService {
             data.organizationName,
             data.jobLevel,
             data.branch,
-            data.managerId ?? null,     
+            data.managerId ?? null,
+            data.hasDashboard ?? false
         ]);
 
         return rows;
