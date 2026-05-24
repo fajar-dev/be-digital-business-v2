@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { EmployeeService } from "../service/employee.service";
 import { ApiResponse } from "../helper/response";
-import { NotFoundException } from "../helper/exception";
+import { NotFoundException, BadRequestException } from "../helper/exception";
 
 export class EmployeeController {
     private employeeService: EmployeeService;
@@ -12,6 +12,10 @@ export class EmployeeController {
 
     async getEmployeeByEmployeeId(c: Context) {
         const employeeId = c.req.param('id');
+        if (!employeeId) {
+            throw new BadRequestException('Employee ID is required');
+        }
+
         const result = await this.employeeService.getEmployeeByEmployeeId(employeeId);
         
         if (!result) {
@@ -23,6 +27,10 @@ export class EmployeeController {
 
     async getEmployeeHierarchy(c: Context) {
         const employeeId = c.req.param('id');
+        if (!employeeId) {
+            throw new BadRequestException('Employee ID is required');
+        }
+
         const hierarchy = await this.employeeService.getHierarchy(employeeId);
 
         return ApiResponse.success(c, hierarchy, "Employee hierarchy retrieved successfully");
