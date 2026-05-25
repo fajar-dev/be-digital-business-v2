@@ -24,4 +24,19 @@ export class InvoiceController {
 
         return ApiResponse.success(c, data, "Success get internal invoice");
     }
+
+    async implementatorInvoice(c: Context) {
+        const { month, year } = c.req.query();
+        const id = c.req.param('id');
+
+        if (!month || !year || !id) {
+            return ApiResponse.error(c, "month, year, and id are required", 400);
+        }
+
+        const { startDate, endDate } = this.periodHelper.getStartAndEndDateForMonth(Number(year), Number(month) - 1);
+        
+        const data = await this.snapshotService.getImplementatorInvoiceDetail(id, startDate, endDate);
+
+        return ApiResponse.success(c, data, "Implementator invoice retrieved successfully");
+    }
 }

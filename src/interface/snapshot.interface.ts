@@ -23,12 +23,14 @@ export interface SnapshotData {
 
 export interface ISnapshotRepository {
     getInternalInvoice(salesId: string, startDate: string, endDate: string): Promise<any[]>;
+    getSnapshotByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<any[]>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;
 }
 
 export interface ISnapshotService {
     getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
+    getImplementatorInvoiceDetail(implementatorId: string, startDate: string, endDate: string): Promise<any>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;
 }

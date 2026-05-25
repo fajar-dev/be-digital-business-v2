@@ -77,4 +77,19 @@ export class NisRepository implements INisRepository {
 
         return rows as any[];
     }
+
+    async getChurnCountByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<number> {
+        const query = `
+            SELECT COUNT(*) AS total
+            FROM CustomerServices cs
+            LEFT JOIN Customer c ON c.CustId = cs.CustId
+            WHERE cs.ServiceId IN ('NWBUS', 'NWADV')
+            AND c.Surveyor = ?
+            AND cs.CustStatus = 'NA'
+            AND cs.CustUnregDate BETWEEN ? AND ?;
+        `;
+        const [rows] = await this.dbPool.query(query, [implementatorId, startDate, endDate]);
+        const data = rows as any[];
+        return data.length > 0 ? Number(data[0].total) : 0;
+    }
 }

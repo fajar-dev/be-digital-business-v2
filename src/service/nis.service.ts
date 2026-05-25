@@ -6,4 +6,8 @@ export class NisService implements INisService {
     async getInternalByDateRange(startDate: string, endDate: string): Promise<any[]> {
         return await this.nisRepository.getInternalByDateRange(startDate, endDate);
     }
+
+    async getChurnCountByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<number> {
+        return this.nisRepository.getChurnCountByImplementator(implementatorId, startDate, endDate);
+    }
 }

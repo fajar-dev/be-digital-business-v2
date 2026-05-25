@@ -11,12 +11,31 @@ export class SnapshotRepository implements ISnapshotRepository {
                 e.name AS implementator_name,
                 e.photo_profile AS implementator_photo_profile
             FROM snapshots s
-            LEFT JOIN employee e ON s.implementator_id = e.employee_id
+            LEFT JOIN employees e ON s.implementator_id = e.employee_id
             WHERE s.sales_id = ? 
               AND s.paid_date BETWEEN ? AND ?
               AND s.service_type = 'internal'
         `;
         const [rows] = await this.dbPool.query(query, [salesId, startDate, endDate]);
+        return rows as any[];
+    }
+
+    async getSnapshotByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<any[]> {
+        const query = `
+            SELECT 
+                s.*,
+                e.name                  AS sales_name,
+                e.employee_id           AS sales_id,
+                e.photo_profile         AS sales_photo
+            FROM snapshots s
+            LEFT JOIN employees e
+                ON s.sales_id = e.employee_id
+            WHERE s.implementator_id = ?
+              AND s.paid_date BETWEEN ? AND ?
+              AND s.service_group_id = 'NW'
+            GROUP BY s.ai
+        `;
+        const [rows] = await this.dbPool.query(query, [implementatorId, startDate, endDate]);
         return rows as any[];
     }
 

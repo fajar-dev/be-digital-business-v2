@@ -5,10 +5,10 @@ import { SnapshotRepository } from '../repository/snapshot.repository';
 import { dashboardPool, nisPool } from '../config/database';
 import { PeriodHelper } from '../helper/period';
 
-const snapshotRepository = new SnapshotRepository(dashboardPool);
-const snapshotService = new SnapshotService(snapshotRepository);
 const nisRepository = new NisRepository(nisPool);
 const nisService = new NisService(nisRepository);
+const snapshotRepository = new SnapshotRepository(dashboardPool);
+const snapshotService = new SnapshotService(snapshotRepository, nisService);
 const periodHelper = new PeriodHelper();
 
 async function syncInternalInvoices() {
