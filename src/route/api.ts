@@ -48,7 +48,7 @@ api.get('/employee/:id/hierarchy', authMiddleware, (c) => employeeController.get
 
 // Protected Invoice Routes
 api.get('/invoice/:id/internal', (c) => invoiceController.internalInvoice(c));
-api.get('/invoice/:id/implementator', authMiddleware, (c) => invoiceController.implementatorInvoice(c));
+api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvoice(c));
 
 // Additional Routes
 api.get('/additional/period', (c) => additionalController.getPeriod(c));

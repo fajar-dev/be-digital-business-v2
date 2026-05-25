@@ -18,9 +18,7 @@ export class InvoiceController {
         }
 
         const { startDate, endDate } = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
-
         const data = await this.snapshotService.getInternalInvoiceDetail(employeeId, startDate, endDate);
-
         return ApiResponse.success(c, data, "Success get internal invoice");
     }
 
@@ -33,9 +31,7 @@ export class InvoiceController {
         }
 
         const { startDate, endDate } = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
-        
         const data = await this.snapshotService.getImplementatorInvoiceDetail(id, startDate, endDate);
-
         return ApiResponse.success(c, data, "Implementator invoice retrieved successfully");
     }
 }

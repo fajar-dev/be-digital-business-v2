@@ -55,7 +55,7 @@ export class PeriodHelper {
     }
 
     getStartAndEndDateForMonth(year: number, month: number) {
-        // month: 1 = January, 12 = December, dst
+        // month: 1 = January, 12 = December
         const startMonth = month === 1 ? 11 : month - 2;
         const startYear = month === 1 ? year - 1 : year;
 
@@ -79,16 +79,26 @@ export class PeriodHelper {
                 year += 1;
             }
         }
+        
+        const month = monthIndex + 1;
+        const { startDate, endDate } = this.getStartAndEndDateForMonth(year, month);
+        
         return {
             year,
-            month: monthIndex + 1,
-            startDate: this.getStartAndEndDateForMonth(year, monthIndex + 1).startDate,
-            endDate: this.getStartAndEndDateForMonth(year, monthIndex + 1).endDate
+            month,
+            startDate,
+            endDate
         };
     }
 
     getPeriodFromQuery(monthQuery?: string | number | null, yearQuery?: string | number | null) {
         const today = new Date();
+        
+        // If neither month nor year is provided, just get period by today's date
+        if (!monthQuery && !yearQuery) {
+            return this.getPeriodByDate(today);
+        }
+        
         const month = monthQuery ? Number(monthQuery) : today.getMonth() + 1;
         const year = yearQuery ? Number(yearQuery) : today.getFullYear();
 
