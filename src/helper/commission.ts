@@ -1,4 +1,4 @@
-export type SnapshotStatus = 'new' | 'upgrade' | 'termin' | 'recurring';
+export type SnapshotStatus = 'new' | 'upgrade' | 'termin' | 'recurring' | 'prorate';
 export type SnapshotType = 'internal' | 'resell';
 
 export class CommissionCalculator {
@@ -30,7 +30,7 @@ export class CommissionCalculator {
         let commissionAmount = 0;
 
         // Determine percentage based on status
-        if (status === 'upgrade') {
+        if (status === 'upgrade' || status === 'prorate') {
             commissionPercentage = 20;
         } else if (status === 'new' || status === 'termin') {
             commissionPercentage = crossSellCount > 0 ? 15 : 12;
@@ -63,7 +63,7 @@ export class CommissionCalculator {
 
         if (status === 'recurring') {
             commissionPercentage = 0.5;
-        } else if (status === 'new' || status === 'upgrade') {
+        } else if (status === 'new' || status === 'upgrade' || status === 'prorate' || status === 'termin') {
             // Tiered percentage based on margin
             if (margin >= 15) {
                 commissionPercentage = 5;
@@ -94,7 +94,7 @@ export class CommissionCalculator {
         let proratedDpp = dpp;
         
         // Prorate for new or upgrade
-        if (status === 'new' || status === 'upgrade') {
+        if (status === 'new' || status === 'upgrade' || status === 'prorate' || status === 'termin') {
             const period = monthPeriod || 1;
             proratedDpp = dpp / period;
         }
