@@ -11,3 +11,26 @@ CREATE TABLE employee (
     manager_id INT NULL,
     has_dashboard BOOLEAN NOT NULL DEFAULT false
 );
+
+CREATE TABLE snapshots (
+    ai INT PRIMARY KEY,
+    invoice_number BIGINT NULL,
+    sequence_number INT NULL,
+    paid_date DATE NULL,
+    dpp DECIMAL(15, 2) NULL,
+    status ENUM('new', 'upgrade', 'termin', 'recurring', 'prorate') NOT NULL DEFAULT 'recurring',
+    month_period DECIMAL(15, 1) NULL,
+    total_account INT NULL,
+    customer_id VARCHAR(20) NULL,
+    customer_service_id INT NULL,
+    customer_company VARCHAR(255) NULL,
+    contract_until_date DATE NULL,
+    service_group_id VARCHAR(20) NULL,
+    service_id VARCHAR(20) NULL,
+    service_name VARCHAR(255) NULL,
+    service_type ENUM('internal', 'resell') NOT NULL,
+    cross_sell_count INT NOT NULL DEFAULT 0,
+    sales_id VARCHAR(20) NULL,
+    manager_sales_id VARCHAR(20) NULL,
+    implementator_id VARCHAR(20) NULL
+);
