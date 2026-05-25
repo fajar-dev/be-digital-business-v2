@@ -1,8 +1,11 @@
 import { NusaworkService } from '../service/nusawork.service';
 import { EmployeeService } from '../service/employee.service';
+import { EmployeeRepository } from '../repository/employee.repository';
+import { dashboardPool } from '../config/database';
 
 const nusaworkService = new NusaworkService();
-const employeeService = new EmployeeService();
+const employeeRepository = new EmployeeRepository(dashboardPool);
+const employeeService = new EmployeeService(employeeRepository);
 
 async function syncEmployees() {
     console.log('[SYNC] Starting employee synchronization from Nusawork...');

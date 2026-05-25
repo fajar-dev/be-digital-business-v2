@@ -1,9 +1,14 @@
 import { NisService } from '../service/nis.service';
-import { InvoiceService } from '../service/invoice.service';
+import { NisRepository } from '../repository/nis.repository';
+import { SnapshotService } from '../service/snapshot.service';
+import { SnapshotRepository } from '../repository/snapshot.repository';
+import { dashboardPool, nisPool } from '../config/database';
 import { PeriodHelper } from '../helper/period';
 
-const nisService = new NisService();
-const invoiceService = new InvoiceService();
+const snapshotRepository = new SnapshotRepository(dashboardPool);
+const snapshotService = new SnapshotService(snapshotRepository);
+const nisRepository = new NisRepository(nisPool);
+const nisService = new NisService(nisRepository);
 const periodHelper = new PeriodHelper();
 
 async function syncInternalInvoices() {
@@ -16,7 +21,7 @@ async function syncInternalInvoices() {
 
     try {
         console.log(`[SYNC] Deleting existing internal invoices from ${startDate} to ${endDate}...`);
-        await invoiceService.deleteSnapshotByDateRangeAndType(startDate, endDate, 'internal');
+        await snapshotService.deleteSnapshotByDateRangeAndType(startDate, endDate, 'internal');
 
         console.log(`[SYNC] Fetching internal invoices from ${startDate} to ${endDate}...`);
         const rows = await nisService.getInternalByDateRange(startDate, endDate);
@@ -82,12 +87,12 @@ async function syncInternalInvoices() {
                     monthPeriod = 12;
                 }
 
-                await invoiceService.insertSnapshot({
+                await snapshotService.insertSnapshot({
                     ai: row.ai,
                     invoice_number: row.invoice_number,
                     sequence_number: row.sequence_number,
                     paid_date: row.paid_date,
-                    dpp: row.dpp,
+                    subscription: row.subscription,
                     status: status as any,
                     month_period: monthPeriod,
                     total_account: row.total_account,

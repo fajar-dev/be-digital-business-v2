@@ -1,21 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
 import { config } from '../config/app';
+import { Employee, INusaworkService } from '../interface/nusawork.interface';
 
-export interface Employee {
-    userId: number | string;
-    employeeId: string;
-    name: string;
-    email: string;
-    photoProfile: string | null;
-    jobPosition: string;
-    organizationName: string;
-    jobLevel: string;
-    branch: string;
-    managerId: number | string | null;
-    hasDashboard?: boolean;
-}
-
-export class NusaworkService {
+export class NusaworkService implements INusaworkService {
     private readonly http: AxiosInstance;
 
     constructor() {

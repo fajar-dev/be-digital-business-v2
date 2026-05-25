@@ -1,123 +1,45 @@
-import { OAuth2Client } from "google-auth-library";
 import { Context } from "hono";
-import { sign, verify } from 'hono/jwt';
-import { EmployeeService } from "../service/employee.service";
-import { config } from "../config/app";
+import { IAuthService } from "../interface/auth.interface";
 import { ApiResponse } from "../helper/response";
-import { UnauthorizedException, NotFoundException, BadRequestException } from "../helper/exception";
-import axios from "axios";
+import { UnauthorizedException, BadRequestException } from "../helper/exception";
 
 export class AuthController {
-    private employeeService: EmployeeService;
-
-    constructor() {
-        this.employeeService = new EmployeeService();
-    }
-
-    private getOauth2Client() {
-        return new OAuth2Client(
-            config.auth.googleClientId,
-            config.auth.googleClientSecret,
-            'postmessage'
-        );
-    }
-
-    async verify(code: string): Promise<any> {
-        const oAuth2Client = this.getOauth2Client();
-        const result = await oAuth2Client.getToken(code);
-        const ticket = await oAuth2Client.verifyIdToken({
-            idToken: result.tokens.id_token!,
-            audience: config.auth.googleClientId,
-        });
-        return ticket.getPayload();
-    }
-
-    async generateToken(employee: any) {
-        const now = Math.floor(Date.now() / 1000);
-        const accessTokenPayload = {
-            sub: employee.employee_id,
-            svp: employee.manager_id,
-            email: employee.email,
-            role: employee.job_position,
-            exp: now + 60 * 15, // 15 minutes
-        };
-        const refreshTokenPayload = {
-            sub: employee.employee_id,
-            email: employee.email,
-            exp: now + 60 * 60 * 24 * 7, // 7 days
-        };
-
-        const accessToken = await sign(accessTokenPayload, config.auth.jwtSecret);
-        const refreshToken = await sign(refreshTokenPayload, config.auth.jwtSecret);
-        
-        return { accessToken, refreshToken };
-    }
+    constructor(private readonly authService: IAuthService) {}
 
     async login(c: Context) {
         const body = await c.req.json();
         
-        let isVerify;
-        try {
-            isVerify = await axios.post(config.auth.apiUrl, {
-                username: body.employeeId,
-                password: body.password
-            });
-        } catch (error: any) {
-            throw new UnauthorizedException('Employee ID or password is not valid');
+        if (!body.employeeId || !body.password) {
+            throw new BadRequestException('Employee ID and password are required');
         }
 
-        if(isVerify.status !== 201) {
-            throw new UnauthorizedException('Employee ID or password is not valid');
-        }
+        const data = await this.authService.login(body.employeeId, body.password);
         
-        const employee = await this.employeeService.getEmployeeByEmployeeId(body.employeeId) as any;
-        
-        if(!employee) {
-            throw new NotFoundException('Employee not found');
-        }
-
-        const tokens = await this.generateToken(employee);
-        
-        return ApiResponse.success(c, {
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            user: employee
-        }, "Login successful");
+        return ApiResponse.success(c, data, "Login successful");
     }
 
     async devLogin(c: Context) {
         const body = await c.req.json();
-        const employee = await this.employeeService.getEmployeeByEmployeeId(body.employeeId) as any;
         
-        if(!employee) {
-            throw new NotFoundException('Employee not found');
+        if (!body.employeeId) {
+            throw new BadRequestException('Employee ID is required');
         }
 
-        const tokens = await this.generateToken(employee);
+        const data = await this.authService.devLogin(body.employeeId);
         
-        return ApiResponse.success(c, {
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            user: employee
-        }, "Login successful");
+        return ApiResponse.success(c, data, "Login successful");
     }
 
     async google(c: Context) {
         const body = await c.req.json();
-        const payload = await this.verify(body.code);
-        const employee = await this.employeeService.getEmployeeByEmail(payload.email) as any;
         
-        if(!employee) {
-            throw new NotFoundException('Employee not found');
+        if (!body.code) {
+            throw new BadRequestException('Authorization code is required');
         }
 
-        const tokens = await this.generateToken(employee);
+        const data = await this.authService.googleLogin(body.code);
         
-        return ApiResponse.success(c, {
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            user: employee
-        }, "Login successful");
+        return ApiResponse.success(c, data, "Login successful");
     }
 
     async refresh(c: Context) {
@@ -128,27 +50,9 @@ export class AuthController {
             throw new BadRequestException('Refresh token is required');
         }
 
-        let payload;
-        try {
-            payload = await verify(refreshToken, config.auth.jwtSecret, 'HS256');
-        } catch (err) {
-            throw new UnauthorizedException('Invalid refresh token');
-        }
-        
-        const email = payload.email as string;
-        
-        const employee = await this.employeeService.getEmployeeByEmail(email) as any;
-        if (!employee) {
-            throw new UnauthorizedException('User not found');
-        }
+        const data = await this.authService.refreshToken(refreshToken);
 
-        const tokens = await this.generateToken(employee);
-
-        return ApiResponse.success(c, {
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            user: employee
-        }, "Token refreshed");
+        return ApiResponse.success(c, data, "Token refreshed");
     }
 
     async me(c: Context) {
@@ -162,19 +66,7 @@ export class AuthController {
             throw new UnauthorizedException('Token missing');
         }
 
-        let payload;
-        try {
-            payload = await verify(token, config.auth.jwtSecret, 'HS256');
-        } catch (err) {
-            throw new UnauthorizedException('Invalid token');
-        }
-        
-        const email = payload.email as string;
-        const employee = await this.employeeService.getEmployeeByEmail(email) as any;
-
-        if (!employee) {
-            throw new NotFoundException('User not found');
-        }
+        const employee = await this.authService.getMe(token);
 
         return ApiResponse.success(c, employee, "User retrieved");
     }

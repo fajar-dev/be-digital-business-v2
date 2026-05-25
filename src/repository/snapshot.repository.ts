@@ -1,44 +1,38 @@
-import { dashboardPool } from '../config/database';
+import { Pool } from 'mysql2/promise';
+import { SnapshotData, ISnapshotRepository } from '../interface/snapshot.interface';
 
-export interface SnapshotData {
-    ai: number;
-    invoice_number: number | null;
-    sequence_number: number | null;
-    paid_date: Date | string | null;
-    dpp: number | null;
-    status: 'new' | 'upgrade' | 'termin' | 'recurring' | 'prorate';
-    month_period: number | null;
-    total_account: number | null;
-    customer_id: string | null;
-    customer_service_id: number | null;
-    customer_company: string | null;
-    contract_until_date: Date | string | null;
-    service_group_id: string | null;
-    service_id: string | null;
-    service_name: string | null;
-    service_type: 'internal' | 'resell';
-    cross_sell_count: number;
-    sales_id: string | null;
-    manager_sales_id: string | null;
-    implementator_id: string | null;
-}
+export class SnapshotRepository implements ISnapshotRepository {
+    constructor(private readonly dbPool: Pool) {}
 
-export class InvoiceService {
-    constructor() {}
+    async getInternalInvoice(salesId: string, startDate: string, endDate: string): Promise<any[]> {
+        const query = `
+            SELECT 
+                s.*,
+                e.name AS implementator_name,
+                e.photo_profile AS implementator_photo_profile
+            FROM snapshots s
+            LEFT JOIN employee e ON s.implementator_id = e.employee_id
+            WHERE s.sales_id = ? 
+              AND s.paid_date BETWEEN ? AND ?
+              AND s.service_type = 'internal'
+        `;
+        const [rows] = await this.dbPool.query(query, [salesId, startDate, endDate]);
+        return rows as any[];
+    }
 
-    async deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell') {
+    async deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any> {
         const query = `
             DELETE FROM snapshots
             WHERE service_type = ? AND paid_date BETWEEN ? AND ?
         `;
-        const [result] = await dashboardPool.query(query, [serviceType, startDate, endDate]);
+        const [result] = await this.dbPool.query(query, [serviceType, startDate, endDate]);
         return result;
     }
 
-    async insertSnapshot(data: SnapshotData) {
+    async insertSnapshot(data: SnapshotData): Promise<any> {
         const query = `
             INSERT INTO snapshots (
-                ai, invoice_number, sequence_number, paid_date, dpp,
+                ai, invoice_number, sequence_number, paid_date, subscription,
                 status, month_period, total_account, customer_id, customer_service_id,
                 customer_company, contract_until_date, service_group_id, service_id,
                 service_name, service_type, cross_sell_count, sales_id, manager_sales_id, implementator_id
@@ -51,7 +45,7 @@ export class InvoiceService {
                 invoice_number = VALUES(invoice_number),
                 sequence_number = VALUES(sequence_number),
                 paid_date = VALUES(paid_date),
-                dpp = VALUES(dpp),
+                subscription = VALUES(subscription),
                 status = VALUES(status),
                 month_period = VALUES(month_period),
                 total_account = VALUES(total_account),
@@ -74,7 +68,7 @@ export class InvoiceService {
             data.invoice_number,
             data.sequence_number,
             data.paid_date,
-            data.dpp,
+            data.subscription,
             data.status,
             data.month_period,
             data.total_account,
@@ -92,7 +86,7 @@ export class InvoiceService {
             data.implementator_id
         ];
 
-        const [result] = await dashboardPool.query(query, values);
+        const [result] = await this.dbPool.query(query, values);
         return result;
     }
 }

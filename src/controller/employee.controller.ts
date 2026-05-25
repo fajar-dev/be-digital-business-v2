@@ -1,14 +1,10 @@
 import { Context } from "hono";
-import { EmployeeService } from "../service/employee.service";
+import { IEmployeeService } from "../interface/employee.interface";
 import { ApiResponse } from "../helper/response";
 import { NotFoundException, BadRequestException } from "../helper/exception";
 
 export class EmployeeController {
-    private employeeService: EmployeeService;
-
-    constructor() {
-        this.employeeService = new EmployeeService();
-    }
+    constructor(private readonly employeeService: IEmployeeService) {}
 
     async getEmployeeByEmployeeId(c: Context) {
         const employeeId = c.req.param('id');

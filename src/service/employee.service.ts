@@ -1,132 +1,40 @@
-import { dashboardPool } from "../config/database";
-import { RowDataPacket } from "mysql2";
-import { Employee } from "./nusawork.service";
+import { Employee } from "../interface/nusawork.interface";
+import { IEmployeeRepository, IEmployeeService } from "../interface/employee.interface";
 
-export class EmployeeService {
-    constructor() {}
+export class EmployeeService implements IEmployeeService {
+    constructor(private readonly employeeRepository: IEmployeeRepository) {}
 
     async insertEmployee(data: Employee) {
-        const query = `
-            INSERT INTO employees (
-                id,
-                employee_id,
-                name,
-                email,
-                photo_profile,
-                job_position,
-                organization_name,
-                job_level,
-                branch,
-                manager_id,
-                has_dashboard
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                employee_id = VALUES(employee_id),
-                name = VALUES(name),
-                email = VALUES(email),
-                photo_profile = VALUES(photo_profile),
-                job_position = VALUES(job_position),
-                organization_name = VALUES(organization_name),
-                job_level = VALUES(job_level),
-                branch = VALUES(branch),
-                manager_id = VALUES(manager_id),
-                has_dashboard = VALUES(has_dashboard)
-        `;
-
-        const [rows] = await dashboardPool.query(query, [
-            data.userId,
-            data.employeeId,
-            data.name,
-            data.email,             
-            data.photoProfile,
-            data.jobPosition,
-            data.organizationName,
-            data.jobLevel,
-            data.branch,
-            data.managerId ?? null,
-            data.hasDashboard ?? false
-        ]);
-
-        return rows;
+        return await this.employeeRepository.insertEmployee(data);
     }
 
     async getManagerById(employeeId: string) {
-        const query = `
-            SELECT *
-            FROM employees
-            WHERE employee_id = ?
-        `;
-        const [rows] = await dashboardPool.query<RowDataPacket[]>(query, [employeeId]);
-        return rows;
+        return await this.employeeRepository.getManagerById(employeeId);
     }
 
     async getStaff(managerId: string) {
-        const query = `
-            SELECT *
-            FROM employees
-            WHERE manager_id = ?
-        `;
-        const [rows] = await dashboardPool.query<RowDataPacket[]>(query, [managerId]);
-        return rows;
+        return await this.employeeRepository.getStaff(managerId);
     }
 
     async getEmployeeByEmployeeId(employeeId: string) {
-        const query = `
-            SELECT 
-                e1.*, 
-                e2.name AS managerName, 
-                e2.employee_id AS managerEmployeeId, 
-                e2.photo_profile AS managerPhotoProfile 
-            FROM employees e1 
-            LEFT JOIN employees e2 ON e1.manager_id = e2.id 
-            WHERE e1.employee_id = ? 
-            LIMIT 1
-        `;
-        const [rows] = await dashboardPool.query<RowDataPacket[]>(query, [employeeId]);
-        return rows.length > 0 ? rows[0] : null;
+        return await this.employeeRepository.getEmployeeByEmployeeId(employeeId);
     }
 
     async getEmployeeById(id: string) {
-        const query = `SELECT * FROM employees WHERE id = ? LIMIT 1`;
-        const [rows] = await dashboardPool.query<RowDataPacket[]>(query, [id]);
-        return rows.length > 0 ? rows[0] : null;
+        return await this.employeeRepository.getEmployeeById(id);
     }
 
     async getEmployeeByEmail(email: string) {
-        const query = `SELECT * FROM employees WHERE email = ? LIMIT 1`;
-        const [rows] = await dashboardPool.query<RowDataPacket[]>(query, [email]);
-        return rows.length > 0 ? rows[0] : null;
+        return await this.employeeRepository.getEmployeeByEmail(email);
     }
 
     async getHierarchy(employeeId: string) {
-        const employee: any = await this.getEmployeeByEmployeeId(employeeId);
+        const employee = await this.getEmployeeByEmployeeId(employeeId);
 
         if (employee && employee.manager_id == null) {
-            const query = `SELECT * FROM employees WHERE has_dashboard = true`;
-            const [rows]: any[] = await dashboardPool.query(query);
-            return Array.isArray(rows) ? rows : [];
+            return await this.employeeRepository.getAllDashboardEmployees();
         }
 
-        const query = `
-            WITH RECURSIVE employee_hierarchy AS (
-                SELECT *, 0 AS depth
-                FROM employees
-                WHERE employee_id = ?
-                
-                UNION ALL
-                
-                SELECT e.*, eh.depth + 1
-                FROM employees e
-                INNER JOIN employee_hierarchy eh ON e.manager_id = eh.id
-            )
-            SELECT * 
-            FROM employee_hierarchy 
-            WHERE has_dashboard = true 
-            ORDER BY depth ASC;
-        `;
-        const [rows]: any[] = await dashboardPool.query(query, [employeeId]);
-
-        return Array.isArray(rows) ? rows : [];
+        return await this.employeeRepository.getHierarchy(employeeId);
     }
 }

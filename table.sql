@@ -17,7 +17,7 @@ CREATE TABLE snapshots (
     invoice_number BIGINT NULL,
     sequence_number INT NULL,
     paid_date DATE NULL,
-    dpp DECIMAL(15, 2) NULL,
+    subscription DECIMAL(15, 2) NULL,
     status ENUM('new', 'upgrade', 'termin', 'recurring', 'prorate') NOT NULL DEFAULT 'recurring',
     month_period DECIMAL(15, 1) NULL,
     total_account INT NULL,
