@@ -19,7 +19,7 @@ export class SnapshotService implements ISnapshotService {
         const invoice = snapshots.map(row => {
             const subscription = Number(row.subscription) || 0;
             const monthPeriod = Number(row.month_period) || 1;
-            const mrc = row.status === 'recurring' ? 0 : (subscription / monthPeriod);
+            const mrc = subscription / monthPeriod;
             
             const { implementatorCommission, implementatorCommissionPercentage, type } = CommissionCalculator.calculateImplementatorCommission(
                 row.status,
