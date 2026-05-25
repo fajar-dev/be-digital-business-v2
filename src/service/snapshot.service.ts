@@ -13,11 +13,13 @@ export class SnapshotService implements ISnapshotService {
         const churnCount = await this.nisService.getChurnCountByImplementator(implementatorId, startDate, endDate);
 
         let totalSubscription = 0;
+        let totalMrc = 0;
         let totalCommission = 0;
 
         const invoice = snapshots.map(row => {
             const subscription = Number(row.subscription) || 0;
             const monthPeriod = Number(row.month_period) || 1;
+            const mrc = row.status === 'recurring' ? 0 : (subscription / monthPeriod);
             
             const { implementatorCommission, implementatorCommissionPercentage, type } = CommissionCalculator.calculateImplementatorCommission(
                 row.status,
@@ -33,6 +35,7 @@ export class SnapshotService implements ISnapshotService {
             }
 
             totalSubscription += subscription;
+            totalMrc += mrc;
             totalCommission += implementatorCommission;
 
             return {
@@ -58,6 +61,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.sales_photo || ''
                 },
                 subscription: subscription,
+                mrc: mrc,
                 commissionPercentage: implementatorCommissionPercentage,
                 commission: implementatorCommission
             };
@@ -67,6 +71,7 @@ export class SnapshotService implements ISnapshotService {
             invoice,
             churnCount,
             totalSubscription,
+            totalMrc,
             totalCommission
         };
     }
