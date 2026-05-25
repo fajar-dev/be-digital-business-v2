@@ -15,6 +15,9 @@ async function syncInternalInvoices() {
     const endDate = process.argv[3] || currentPeriod.endDate;
 
     try {
+        console.log(`[SYNC] Deleting existing internal invoices from ${startDate} to ${endDate}...`);
+        await invoiceService.deleteSnapshotByDateRangeAndType(startDate, endDate, 'internal');
+
         console.log(`[SYNC] Fetching internal invoices from ${startDate} to ${endDate}...`);
         const rows = await nisService.getInternalByDateRange(startDate, endDate);
         console.log(`[SYNC] Found ${rows.length} internal invoices.`);

@@ -26,6 +26,15 @@ export interface SnapshotData {
 export class InvoiceService {
     constructor() {}
 
+    async deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell') {
+        const query = `
+            DELETE FROM snapshots
+            WHERE service_type = ? AND paid_date BETWEEN ? AND ?
+        `;
+        const [result] = await dashboardPool.query(query, [serviceType, startDate, endDate]);
+        return result;
+    }
+
     async insertSnapshot(data: SnapshotData) {
         const query = `
             INSERT INTO snapshots (
