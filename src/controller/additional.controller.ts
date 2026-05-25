@@ -6,9 +6,8 @@ export class AdditionalController {
     constructor(private readonly periodHelper: PeriodHelper = new PeriodHelper()) {}
 
     async getPeriod(c: Context) {
-        const dateParam = c.req.query('date');
-        const date = dateParam ? new Date(dateParam) : new Date();
-        const data = this.periodHelper.getPeriodByDate(date);
+        const { month: monthQuery, year: yearQuery } = c.req.query();
+        const data = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
         return ApiResponse.success(c, data, "Period retrieved successfully");
     }
 }

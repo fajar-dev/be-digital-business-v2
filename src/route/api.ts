@@ -52,6 +52,4 @@ api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvo
 
 // Additional Routes
 api.get('/additional/period', (c) => additionalController.getPeriod(c));
-api.get('/additional/current-period', (c) => additionalController.getCurrentPeriod(c));
-
 export { api };
