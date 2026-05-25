@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { AuthController } from '../controller/auth.controller';
 import { EmployeeController } from '../controller/employee.controller';
 import { InvoiceController } from '../controller/invoice.controller';
+import { AdditionalController } from '../controller/additional.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { SnapshotRepository } from '../repository/snapshot.repository';
 import { SnapshotService } from '../service/snapshot.service';
@@ -29,6 +30,7 @@ const authService = new AuthService(employeeService);
 const authController = new AuthController(authService);
 const employeeController = new EmployeeController(employeeService);
 const invoiceController = new InvoiceController(snapshotService);
+const additionalController = new AdditionalController();
 
 // Public Auth Routes
 api.post('/auth/login', (c) => authController.login(c));
@@ -46,6 +48,10 @@ api.get('/employee/:id/hierarchy', authMiddleware, (c) => employeeController.get
 
 // Protected Invoice Routes
 api.get('/invoice/:id/internal', (c) => invoiceController.internalInvoice(c));
-api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvoice(c));
+api.get('/invoice/:id/implementator', authMiddleware, (c) => invoiceController.implementatorInvoice(c));
+
+// Additional Routes
+api.get('/additional/period', (c) => additionalController.getPeriod(c));
+api.get('/additional/current-period', (c) => additionalController.getCurrentPeriod(c));
 
 export { api };
