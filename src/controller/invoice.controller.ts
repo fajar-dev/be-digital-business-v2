@@ -10,15 +10,14 @@ export class InvoiceController {
     ) {}
 
     async internalInvoice(c: Context) {
-        const { month, year } = c.req.query();
+        const { month: monthQuery, year: yearQuery } = c.req.query();
         const employeeId = c.req.param('id');
 
-        if (!month || !year || !employeeId) {
-            return ApiResponse.error(c, "month, year, and id are required", 400);
+        if (!employeeId) {
+            return ApiResponse.error(c, "id is required", 400);
         }
 
-        // monthIndex in periodHelper is 0-based, so subtract 1 from month string
-        const { startDate, endDate } = this.periodHelper.getStartAndEndDateForMonth(Number(year), Number(month) - 1);
+        const { startDate, endDate } = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
 
         const data = await this.snapshotService.getInternalInvoiceDetail(employeeId, startDate, endDate);
 
@@ -26,14 +25,14 @@ export class InvoiceController {
     }
 
     async implementatorInvoice(c: Context) {
-        const { month, year } = c.req.query();
+        const { month: monthQuery, year: yearQuery } = c.req.query();
         const id = c.req.param('id');
 
-        if (!month || !year || !id) {
-            return ApiResponse.error(c, "month, year, and id are required", 400);
+        if (!id) {
+            return ApiResponse.error(c, "id is required", 400);
         }
 
-        const { startDate, endDate } = this.periodHelper.getStartAndEndDateForMonth(Number(year), Number(month) - 1);
+        const { startDate, endDate } = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
         
         const data = await this.snapshotService.getImplementatorInvoiceDetail(id, startDate, endDate);
 
