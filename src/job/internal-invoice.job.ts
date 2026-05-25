@@ -68,17 +68,17 @@ async function syncInternalInvoices() {
                 let status = 'recurring';
                 if (row.service_group_id === 'NW' && /\btermin\b(?!\w)/i.test(row.description || '')) {
                     status = 'termin';
-                } else if (row.new_subscription > 0 && row.is_upgrade === 0 && row.is_prorata === 0) {
+                } else if (row.new_subscription > 0 && row.is_upgrade === 0 && row.is_prorate === 0) {
                     status = 'new';
-                } else if (row.is_upgrade === 1 && row.is_prorata === 0) {
+                } else if (row.is_upgrade === 1 && row.is_prorate === 0) {
                     status = 'upgrade';
-                } else if (row.is_prorata === 1) {
+                } else if (row.is_prorate === 1 && row.is_upgrade === 0) {
                     status = 'prorate';
                 } else if (isUnderContract && activationMonthDiff > 0) {
                     status = 'termin';
                 } else if (!isUnderContract && activationMonthDiff > 0) {
                     status = 'recurring';
-                } else if (row.is_upgrade === 0 && row.is_prorata === 0 && row.new_subscription === 0) {
+                } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0) {
                     status = 'recurring';
                 }
 

@@ -15,7 +15,7 @@ export class NisRepository implements INisRepository {
                 nci.Description AS description,
                 nciit.new_subscription AS new_subscription,
                 nciit.dpp AS subscription,
-                nciit.is_prorata AS is_prorated,
+                nciit.is_prorata AS is_prorate,
                 nciit.is_upgrade AS is_upgrade,
                 itm.Month AS month,
                 cit.AwalPeriode AS period_start,
