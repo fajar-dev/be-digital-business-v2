@@ -3,7 +3,23 @@ import { format } from 'date-fns';
 export class PeriodHelper {
     constructor() {}
 
-    getStartAndEndDateForCurrentMonth() {
+    /**
+     * Get the start and end date for the current month's period.
+     * If today is > 25, it belongs to the next month's period.
+     * 
+     * @example
+     * // Jika hari ini adalah "2026-06-04" (<= 25)
+     * const period = helper.getStartAndEndDateForCurrentMonth();
+     * // Hasil: { startDate: '2026-05-26', endDate: '2026-06-25' }
+     * 
+     * @example
+     * // Jika hari ini adalah "2026-06-26" (> 25)
+     * const period = helper.getStartAndEndDateForCurrentMonth();
+     * // Hasil: { startDate: '2026-06-26', endDate: '2026-07-25' }
+     * 
+     * @returns {{ startDate: string, endDate: string }} The start and end dates formatted as YYYY-MM-DD
+     */
+    getStartAndEndDateForCurrentMonth(): { startDate: string; endDate: string } {
         const today = new Date();
         let targetMonth = today.getMonth();
         let targetYear = today.getFullYear();
@@ -29,7 +45,17 @@ export class PeriodHelper {
         };
     }
 
-    getStartAndEndDateForPreviousMonth() {
+    /**
+     * Get the start and end date for the previous month's period.
+     * Note: Currently returns the exact same logic as current month.
+     * 
+     * @example
+     * const period = helper.getStartAndEndDateForPreviousMonth();
+     * // Hasil: { startDate: '2026-05-26', endDate: '2026-06-25' } (asumsi hari ini 2026-06-04)
+     * 
+     * @returns {{ startDate: string, endDate: string }} The start and end dates formatted as YYYY-MM-DD
+     */
+    getStartAndEndDateForPreviousMonth(): { startDate: string; endDate: string } {
         const today = new Date();
         let targetMonth = today.getMonth();
         let targetYear = today.getFullYear();
@@ -54,7 +80,18 @@ export class PeriodHelper {
         };
     }
 
-    getStartAndEndDateForMonth(year: number, month: number) {
+    /**
+     * Get the start and end date for a specific month and year.
+     * 
+     * @example
+     * const period = helper.getStartAndEndDateForMonth(2026, 6); // Bulan Juni 2026
+     * // Hasil: { startDate: '2026-05-26', endDate: '2026-06-25' }
+     * 
+     * @param {number} year - The target year
+     * @param {number} month - The target month (1 = January, 12 = December)
+     * @returns {{ startDate: string, endDate: string }} The start and end dates formatted as YYYY-MM-DD
+     */
+    getStartAndEndDateForMonth(year: number, month: number): { startDate: string; endDate: string } {
         // month: 1 = January, 12 = December
         const startMonth = month === 1 ? 11 : month - 2;
         const startYear = month === 1 ? year - 1 : year;
@@ -68,7 +105,23 @@ export class PeriodHelper {
         };
     }
 
-    getPeriodByDate(date: Date) {
+    /**
+     * Get the period details (year, month, start date, end date) based on a given date.
+     * 
+     * @example
+     * const date = new Date('2026-06-04');
+     * const period = helper.getPeriodByDate(date);
+     * // Hasil: { year: 2026, month: 6, startDate: '2026-05-26', endDate: '2026-06-25' }
+     * 
+     * @example
+     * const date = new Date('2026-06-26');
+     * const period = helper.getPeriodByDate(date);
+     * // Hasil: { year: 2026, month: 7, startDate: '2026-06-26', endDate: '2026-07-25' }
+     * 
+     * @param {Date} date - The date to evaluate
+     * @returns {{ year: number, month: number, startDate: string, endDate: string }} Period details
+     */
+    getPeriodByDate(date: Date): { year: number; month: number; startDate: string; endDate: string } {
         let monthIndex = date.getMonth();
         let year = date.getFullYear();
 
@@ -91,7 +144,25 @@ export class PeriodHelper {
         };
     }
 
-    getPeriodFromQuery(monthQuery?: string | number | null, yearQuery?: string | number | null) {
+    /**
+     * Get period details from optional month and year query parameters.
+     * If neither is provided, defaults to the period for today's date.
+     * 
+     * @example
+     * // Dengan query parameters (misal: ?month=6&year=2026)
+     * const period = helper.getPeriodFromQuery('6', '2026');
+     * // Hasil: { year: 2026, month: 6, startDate: '2026-05-26', endDate: '2026-06-25' }
+     * 
+     * @example
+     * // Tanpa query parameters (asumsi hari ini 2026-06-04)
+     * const period = helper.getPeriodFromQuery(null, null);
+     * // Hasil: { year: 2026, month: 6, startDate: '2026-05-26', endDate: '2026-06-25' }
+     * 
+     * @param {string | number | null} [monthQuery] - The month from the query
+     * @param {string | number | null} [yearQuery] - The year from the query
+     * @returns {{ year: number, month: number, startDate: string, endDate: string }} Period details
+     */
+    getPeriodFromQuery(monthQuery?: string | number | null, yearQuery?: string | number | null): { year: number; month: number; startDate: string; endDate: string } {
         const today = new Date();
         
         // If neither month nor year is provided, just get period by today's date

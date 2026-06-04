@@ -12,31 +12,17 @@ export class SnapshotService implements ISnapshotService {
         const snapshots = await this.snapshotRepository.getSnapshotByImplementator(implementatorId, startDate, endDate);
         const churnCount = await this.nisService.getChurnCountByImplementator(implementatorId, startDate, endDate);
 
-        let totalSubscription = 0;
-        let totalMrc = 0;
-        let totalCommission = 0;
-
         const invoice = snapshots.map(row => {
             const subscription = Number(row.subscription) || 0;
             const monthPeriod = Number(row.month_period) || 1;
             const mrc = subscription / monthPeriod;
             
-            const { implementatorCommission, implementatorCommissionPercentage, type } = CommissionCalculator.calculateImplementatorCommission(
+            const { implementatorCommission, implementatorCommissionPercentage } = CommissionCalculator.calculateImplementatorCommission(
                 row.status,
                 subscription,
                 churnCount,
                 monthPeriod
             );
-
-            // Calculation prorated subscription
-            let proratedDpp = subscription;
-            if (row.status === 'new' || row.status === 'upgrade') {
-                proratedDpp = subscription / monthPeriod;
-            }
-
-            totalSubscription += subscription;
-            totalMrc += mrc;
-            totalCommission += implementatorCommission;
 
             return {
                 ai: row.ai,
@@ -67,21 +53,54 @@ export class SnapshotService implements ISnapshotService {
             };
         });
 
+        return invoice;
+    }
+
+    async getImplementatorCommissionSummary(implementatorId: string, startDate: string, endDate: string): Promise<any> {
+        const snapshots = await this.snapshotRepository.getSnapshotByImplementator(implementatorId, startDate, endDate);
+        const churnCount = await this.nisService.getChurnCountByImplementator(implementatorId, startDate, endDate);
+
+        let commissionNew = 0;
+        let commissionRecurring = 0;
+        let totalMrc = 0;
+        let totalSubscription = 0;
+
+        snapshots.forEach(row => {
+            const subscription = Number(row.subscription) || 0;
+            const monthPeriod = Number(row.month_period) || 1;
+            const status = row.status;
+            
+            const { implementatorCommission } = CommissionCalculator.calculateImplementatorCommission(
+                status,
+                subscription,
+                churnCount,
+                monthPeriod
+            );
+
+            if (status === 'recurring') {
+                commissionRecurring += implementatorCommission;
+            } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
+                commissionNew += implementatorCommission;
+                const mrc = subscription / monthPeriod;
+                totalMrc += mrc;
+                totalSubscription += subscription;
+            }
+        });
+
         return {
-            invoice,
-            churnCount,
-            totalSubscription,
-            totalMrc,
-            totalCommission
+            commission: {
+                new: commissionNew,
+                recurring: commissionRecurring,
+                total: commissionNew + commissionRecurring
+            },
+            mrc: totalMrc,
+            subscription: totalSubscription,
+            churnCount: churnCount
         };
     }
 
     async getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any> {
         const snapshots = await this.snapshotRepository.getInternalInvoice(employeeId, startDate, endDate);
-
-        let totalSubscription = 0;
-        let totalMrc = 0;
-        let totalCommission = 0;
 
         const invoice = snapshots.map(row => {
             const subscription = Number(row.subscription) || 0;
@@ -96,10 +115,6 @@ export class SnapshotService implements ISnapshotService {
                 row.cross_sell_count,
                 monthPeriod
             );
-
-            totalSubscription += subscription;
-            totalMrc += mrc;
-            totalCommission += commissionAmount;
 
             return {
                 ai: row.ai,
@@ -130,12 +145,7 @@ export class SnapshotService implements ISnapshotService {
             };
         });
 
-        return {
-            invoice,
-            totalSubscription,
-            totalMrc,
-            totalCommission
-        };
+        return invoice;
     }
 
     async deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any> {
