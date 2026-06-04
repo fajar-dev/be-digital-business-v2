@@ -33,6 +33,7 @@ export class NisRepository implements INisRepository {
                 COALESCE(cross_tbl.cross_sell_count, 0) AS cross_sell_count,
                 cs.SalesId AS sales_id,
                 cs.ManagerSalesId AS sales_manager_id,
+                cs.InvoiceType AS invoice_type,
                 c.Surveyor AS implementator_id
             FROM NewCustomerInvoiceInternetCounter nciit
             LEFT JOIN NewCustomerInvoice nci 

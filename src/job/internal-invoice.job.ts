@@ -33,6 +33,7 @@ async function syncInternalInvoices() {
         for (const row of rows) {
             try {
                 // Selisih bulan dari aktivasi ke awal periode invoice
+
                 let activationMonthDiff = -1;
                 if (row.activation_date && row.period_start) {
                     const activationDate = new Date(row.activation_date);
@@ -47,20 +48,17 @@ async function syncInternalInvoices() {
                 }
 
                 let isUnderContract = false;
-                if (row.contract_until && row.period_start) {
+                if (Number(row.invoice_type) > 0 && row.contract_until && row.period_start) {
                     const contractDate = new Date(row.contract_until);
                     if (!isNaN(contractDate.getTime())) {
-                        contractDate.setHours(23, 59, 59, 999);
-                        const startStr = String(row.period_start);
-                        const startYear = Number(startStr.slice(0, 4));
-                        const startMonth = Number(startStr.slice(4, 6));
-                        const startDay = startStr.length >= 8 ? Number(startStr.slice(6, 8)) : 1;
+                        const contractYear = contractDate.getFullYear();
+                        const contractMonth = (contractDate.getMonth() + 1).toString().padStart(2, '0');
+                        const contractEndPeriod = Number(`${contractYear}${contractMonth}`);
+                        
+                        const startContract = Number(String(row.period_start).slice(0, 6));
 
-                        if (Number.isFinite(startYear) && Number.isFinite(startMonth)) {
-                            const awalDate = new Date(startYear, startMonth - 1, startDay);
-                            if (awalDate <= contractDate) {
-                                isUnderContract = true;
-                            }
+                        if (contractEndPeriod >= startContract) {
+                            isUnderContract = true;
                         }
                     }
                 }
@@ -74,8 +72,8 @@ async function syncInternalInvoices() {
                     status = 'upgrade';
                 } else if (row.is_prorate === 1 && row.is_upgrade === 0) {
                     status = 'prorate';
-                } else if (isUnderContract && activationMonthDiff > 0) {
-                    status = 'termin';
+                } else if (Number(row.invoice_type) > 0) {
+                    status = isUnderContract ? 'recurring' : 'termin';
                 } else if (!isUnderContract && activationMonthDiff > 0) {
                     status = 'recurring';
                 } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0) {

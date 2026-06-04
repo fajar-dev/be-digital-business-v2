@@ -41,7 +41,7 @@ export class SnapshotService implements ISnapshotService {
                 serviceName: row.service_name,
                 serviceType: row.service_type,
                 crossSellCount: row.cross_sell_count,
-                salesId: {
+                sales: {
                     name: row.sales_name || '',
                     employeeId: row.sales_id || '',
                     photoProfile: row.sales_photo || ''
@@ -133,7 +133,7 @@ export class SnapshotService implements ISnapshotService {
                 serviceName: row.service_name,
                 serviceType: row.service_type,
                 crossSellCount: row.cross_sell_count,
-                implementatorId: {
+                implementator: {
                     name: row.implementator_name || '',
                     employeeId: row.implementator_id || '',
                     photoProfile: row.implementator_photo_profile || ''
