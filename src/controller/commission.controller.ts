@@ -21,4 +21,17 @@ export class CommissionController {
         const data = await this.snapshotService.getImplementatorCommissionSummary(employeeId, period.startDate, period.endDate);
         return ApiResponse.success(c, data, "implementator commission retrieved successfully");
     }
+
+    async salesCommission(c: Context) {
+        const { month: monthQuery, year: yearQuery } = c.req.query();
+        const employeeId = c.req.param('id');
+
+        if (!employeeId) {
+            return ApiResponse.error(c, "id is required", 400);
+        }
+
+        const period = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
+        const data = await this.snapshotService.getSalesCommissionSummary(employeeId, period.startDate, period.endDate);
+        return ApiResponse.success(c, data, "sales commission retrieved successfully");
+    }
 }

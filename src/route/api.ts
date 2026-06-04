@@ -54,6 +54,7 @@ api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvo
 
 // Protected Commission Routes
 api.get('/commission/:id/implementator', (c) => commissionController.implementatorCommission(c));
+api.get('/commission/:id/sales', (c) => commissionController.salesCommission(c));
 
 // Additional Routes
 api.get('/additional/period', (c) => additionalController.getPeriod(c));

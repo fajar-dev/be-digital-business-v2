@@ -99,6 +99,49 @@ export class SnapshotService implements ISnapshotService {
         };
     }
 
+    async getSalesCommissionSummary(employeeId: string, startDate: string, endDate: string): Promise<any> {
+        const snapshots = await this.snapshotRepository.getInternalInvoice(employeeId, startDate, endDate);
+
+        let commissionNew = 0;
+        let commissionRecurring = 0;
+        let totalMrc = 0;
+        let totalSubscription = 0;
+
+        snapshots.forEach(row => {
+            const subscription = Number(row.subscription) || 0;
+            const monthPeriod = Number(row.month_period) || 1;
+            const status = row.status;
+            const mrc = status === 'recurring' ? 0 : (subscription / monthPeriod);
+
+            const { commissionAmount } = CommissionCalculator.calculateSalesCommission(
+                row.service_type,
+                status,
+                subscription,
+                0, // Margin default
+                row.cross_sell_count,
+                monthPeriod
+            );
+
+            if (status === 'recurring') {
+                commissionRecurring += commissionAmount;
+            } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
+                commissionNew += commissionAmount;
+                totalMrc += mrc;
+                totalSubscription += subscription;
+            }
+        });
+
+        return {
+            commission: {
+                new: commissionNew,
+                recurring: commissionRecurring,
+                total: commissionNew + commissionRecurring
+            },
+            mrc: totalMrc,
+            subscription: totalSubscription
+        };
+    }
+
     async getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any> {
         const snapshots = await this.snapshotRepository.getInternalInvoice(employeeId, startDate, endDate);
 
