@@ -59,3 +59,4 @@ api.get('/commission/:id/sales', (c) => commissionController.salesCommission(c))
 // Additional Routes
 api.get('/additional/period', (c) => additionalController.getPeriod(c));
 export { api };
+
