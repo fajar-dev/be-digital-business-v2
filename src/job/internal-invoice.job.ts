@@ -105,7 +105,8 @@ async function syncInternalInvoices() {
                     cross_sell_count: row.cross_sell_count,
                     sales_id: row.sales_id,
                     manager_sales_id: row.sales_manager_id,
-                    implementator_id: row.implementator_id
+                    implementator_id: row.implementator_id,
+                    modal: null
                 });
                 successCount++;
             } catch (err: any) {

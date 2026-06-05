@@ -19,6 +19,7 @@ export interface SnapshotData {
     sales_id: string | null;
     manager_sales_id: string | null;
     implementator_id: string | null;
+    modal: number | null;
 }
 
 export interface ISnapshotRepository {

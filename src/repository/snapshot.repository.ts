@@ -54,12 +54,12 @@ export class SnapshotRepository implements ISnapshotRepository {
                 ai, invoice_number, sequence_number, paid_date, subscription,
                 status, month_period, total_account, customer_id, customer_service_id,
                 customer_company, contract_until_date, service_group_id, service_id,
-                service_name, service_type, cross_sell_count, sales_id, manager_sales_id, implementator_id
+                service_name, service_type, cross_sell_count, sales_id, manager_sales_id, implementator_id, modal
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?
             ) ON DUPLICATE KEY UPDATE
                 invoice_number = VALUES(invoice_number),
                 sequence_number = VALUES(sequence_number),
@@ -79,7 +79,8 @@ export class SnapshotRepository implements ISnapshotRepository {
                 cross_sell_count = VALUES(cross_sell_count),
                 sales_id = VALUES(sales_id),
                 manager_sales_id = VALUES(manager_sales_id),
-                implementator_id = VALUES(implementator_id)
+                implementator_id = VALUES(implementator_id),
+                modal = VALUES(modal)
         `;
 
         const values = [
@@ -102,7 +103,8 @@ export class SnapshotRepository implements ISnapshotRepository {
             data.cross_sell_count,
             data.sales_id,
             data.manager_sales_id,
-            data.implementator_id
+            data.implementator_id,
+            data.modal
         ];
 
         const [result] = await this.dbPool.query(query, values);

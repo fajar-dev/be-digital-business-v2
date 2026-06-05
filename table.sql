@@ -32,5 +32,6 @@ CREATE TABLE snapshots (
     cross_sell_count INT NOT NULL DEFAULT 0,
     sales_id VARCHAR(20) NULL,
     manager_sales_id VARCHAR(20) NULL,
-    implementator_id VARCHAR(20) NULL
+    implementator_id VARCHAR(20) NULL,
+    modal DECIMAL(15, 2) NULL
 );
