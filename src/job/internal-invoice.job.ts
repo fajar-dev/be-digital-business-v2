@@ -73,7 +73,6 @@ async function syncInternalInvoices() {
                 } else if (row.is_prorate === 1 && row.is_upgrade === 0) {
                     status = 'prorate';
                 } else if (Number(row.invoice_type) > 0) {
-                    console.log(row.ai)
                     status = isUnderContract ? 'recurring' : 'termin';
                 } else if (!isUnderContract && activationMonthDiff > 0) {
                     status = 'recurring';
