@@ -40,6 +40,11 @@ export class PeriodHelper {
         const endDate = new Date(targetYear, targetMonth, 25);
     
         return {
+            startDate: '2026-04-25',
+            endDate: '2026-06-26'
+        }
+
+        return {
             startDate: format(startDate, 'yyyy-MM-dd'),
             endDate: format(endDate, 'yyyy-MM-dd')
         };

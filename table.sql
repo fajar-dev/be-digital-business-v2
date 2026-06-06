@@ -19,7 +19,7 @@ CREATE TABLE snapshots (
     paid_date DATE NULL,
     subscription DECIMAL(15, 2) NULL,
     status ENUM('new', 'upgrade', 'termin', 'recurring', 'prorate') NOT NULL DEFAULT 'recurring',
-    month_period DECIMAL(15, 1) NULL,
+    month_period DECIMAL(15, 6) NULL,
     total_account INT NULL,
     customer_id VARCHAR(20) NULL,
     customer_service_id INT NULL,
@@ -33,5 +33,5 @@ CREATE TABLE snapshots (
     sales_id VARCHAR(20) NULL,
     manager_sales_id VARCHAR(20) NULL,
     implementator_id VARCHAR(20) NULL,
-    modal DECIMAL(15, 2) NULL
+    modal DECIMAL(15, 6) NULL
 );

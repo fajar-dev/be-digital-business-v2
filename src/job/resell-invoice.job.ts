@@ -4,6 +4,7 @@ import { SnapshotService } from '../service/snapshot.service';
 import { SnapshotRepository } from '../repository/snapshot.repository';
 import { dashboardPool, nisPool } from '../config/database';
 import { PeriodHelper } from '../helper/period';
+import { differenceInDays, getDaysInMonth, endOfMonth, addDays } from 'date-fns';
 
 const nisRepository = new NisRepository(nisPool);
 const nisService = new NisService(nisRepository);
@@ -43,6 +44,42 @@ async function syncResellInvoices() {
                     status = 'recurring';
                 }
 
+                let finalModal = Number(row.modal) || 0;
+                let finalMonthPeriod = row.month;
+
+                if (row.period_start_date && row.period_end_date) {
+                    const periodStartDate = new Date(row.period_start_date);
+                    const periodEndDate = new Date(row.period_end_date);
+                    
+                    // Hitung total hari dalam semua bulan kalender yang dicakup periode
+                    let totalDaysInMonths = 0;
+                    let tempMonth = new Date(periodStartDate.getFullYear(), periodStartDate.getMonth(), 1);
+                    const lastMonth = new Date(periodEndDate.getFullYear(), periodEndDate.getMonth(), 1);
+                    while (tempMonth <= lastMonth) {
+                        totalDaysInMonths += getDaysInMonth(tempMonth);
+                        tempMonth = new Date(tempMonth.getFullYear(), tempMonth.getMonth() + 1, 1);
+                    }
+                    
+                    const actualDays = differenceInDays(periodEndDate, periodStartDate) + 1;
+                    const baseModal = Number(row.modal) || 0;
+                    
+                    // Modal prorata = (modal / total hari semua bulan) * hari aktual
+                    finalModal = (baseModal / totalDaysInMonths) * actualDays;
+                    
+                    // Month period prorata per chunk bulan
+                    let monthPeriod = 0;
+                    let current = periodStartDate;
+                    while (current <= periodEndDate) {
+                        const monthEnd = endOfMonth(current);
+                        const chunkEnd = monthEnd < periodEndDate ? monthEnd : periodEndDate;
+                        const daysInChunk = differenceInDays(chunkEnd, current) + 1;
+                        const daysInMonth = getDaysInMonth(current);
+                        monthPeriod += daysInChunk / daysInMonth;
+                        current = addDays(chunkEnd, 1);
+                    }
+                    finalMonthPeriod = monthPeriod;
+                }
+
                 await snapshotService.insertSnapshot({
                     ai: row.ai,
                     invoice_number: row.invoice_number,
@@ -50,7 +87,7 @@ async function syncResellInvoices() {
                     paid_date: row.paid_date,
                     subscription: row.subscription,
                     status: status as any,
-                    month_period: row.month,
+                    month_period: finalMonthPeriod,
                     total_account: row.total_account,
                     customer_id: row.customer_id,
                     customer_service_id: row.customer_service_id,
@@ -64,7 +101,7 @@ async function syncResellInvoices() {
                     sales_id: row.sales_id,
                     manager_sales_id: row.sales_manager_id,
                     implementator_id: null,
-                    modal: Number(row.modal) || 0
+                    modal: finalModal
                 });
                 successCount++;
             } catch (err: any) {

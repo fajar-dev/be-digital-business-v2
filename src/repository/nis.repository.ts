@@ -30,7 +30,7 @@ export class NisRepository implements INisRepository {
                 s.ServiceId AS service_id,
                 s.ServiceType AS service_name,
                 s.BusinessOperation AS service_type,
-                COALESCE(cross_tbl.cross_sell_count, 0) AS cross_sell_count,
+                COUNT(DISTINCT cross_tbl.ServiceId) AS cross_sell_count,
                 cs.SalesId AS sales_id,
                 cs.ManagerSalesId AS sales_manager_id,
                 cs.InvoiceType AS invoice_type,
@@ -60,19 +60,19 @@ export class NisRepository implements INisRepository {
             LEFT JOIN (
                 SELECT 
                     cs2.CustId, 
-                    COUNT(*) AS cross_sell_count
+                    cs2.ServiceId
                 FROM CustomerServices cs2
                 JOIN Services s2 
                     ON cs2.ServiceId = s2.ServiceId
                 WHERE (cs2.CustStatus IS NULL OR cs2.CustStatus <> 'NA')
                 AND (s2.ServiceCategory = 'digital_business' OR s2.ServiceCategory = 'access_business')
-                AND cs2.ServiceId <> cs.ServiceId  -- exclude service itself
-                GROUP BY cs2.CustId
             ) AS cross_tbl 
-                ON cross_tbl.CustId = nci.CustId
+                ON cross_tbl.CustId = nci.CustId AND cross_tbl.ServiceId <> cs.ServiceId
             WHERE s.BusinessOperation = 'internal'
                 AND s.ServiceCategory = 'digital_business'
-                AND nciit.trx_date BETWEEN ? AND ?
+                AND LOWER(s.ServiceType) NOT LIKE '%lisensi%'
+                AND LOWER(s.ServiceType) NOT LIKE '%license%'
+                AND nciit.trx_date BETWEEN ? AND ?            
                 AND NOT (s.ServiceGroup = 'SV' AND nciit.dpp < 500000)
             GROUP BY nciit.AI;
         `;
@@ -141,7 +141,10 @@ export class NisRepository implements INisRepository {
             WHERE s.BusinessOperation = 'resell'
             AND (s.ServiceGroup IS NULL OR s.ServiceGroup <> 'DO')
             AND s.ServiceCategory = 'digital_business'
-            AND nciit.trx_date BETWEEN ? AND ?            
+            AND LOWER(s.ServiceType) NOT LIKE '%lisensi%'   
+            AND LOWER(s.ServiceType) NOT LIKE '%license%'  
+            AND nciit.trx_date BETWEEN ? AND ?      
+            AND NOT (s.ServiceGroup = 'SV' AND nciit.dpp < 500000)      
             GROUP BY nciit.AI;
         `;
 
