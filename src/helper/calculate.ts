@@ -1,35 +1,30 @@
 export type SnapshotStatus = 'new' | 'upgrade' | 'termin' | 'recurring' | 'prorate';
 export type SnapshotType = 'internal' | 'resell';
 
-export class CommissionCalculator {
+export class Calculate {
     /**
-     * Calculate sales commission based on product type and predefined business rules.
+     * MRC = subscription / monthPeriod
      */
-    static calculateSalesCommission(
-        type: SnapshotType,
-        status: SnapshotStatus,
-        dpp: number,
-        margin: number,
-        crossSellCount: number,
-        subscriptionMonths: number
-    ): { commissionAmount: number; commissionPercentage: number } {
-        if (type === 'internal') {
-            return this.calculateInternalCommission(status, dpp, crossSellCount, subscriptionMonths);
-        } else {
-            return this.calculateResellCommission(status, dpp, margin);
-        }
+    static mrc(subscription: number, monthPeriod: number): number {
+        return subscription / (monthPeriod || 1);
     }
 
-    private static calculateInternalCommission(
+    /**
+     * Komisi sales internal.
+     * - upgrade/prorate: 20%
+     * - new/termin + crossSell > 0: 15%, tanpa crossSell: 12%
+     * - recurring: 1%
+     * - Special: new > 12 bulan → 12 bulan pertama full, sisanya 1%
+     */
+    static internalSalesCommission(
         status: SnapshotStatus,
         dpp: number,
         crossSellCount: number,
         months: number
-    ) {
+    ): { commissionAmount: number; commissionPercentage: number } {
         let commissionPercentage = 0;
         let commissionAmount = 0;
 
-        // Determine percentage based on status
         if (status === 'upgrade' || status === 'prorate') {
             commissionPercentage = 20;
         } else if (status === 'new' || status === 'termin') {
@@ -37,15 +32,12 @@ export class CommissionCalculator {
         } else if (status === 'recurring') {
             commissionPercentage = 1;
         } else {
-            commissionPercentage = 1; // Default fallback
+            commissionPercentage = 1;
         }
 
-        // Special rule for new subscriptions paid upfront for > 12 months
         if (status === 'new' && months > 12) {
             const first12MonthsAmount = dpp * (12 / months);
             const remainingAmount = dpp - first12MonthsAmount;
-            
-            // First 12 months get full commission, remaining gets 1% recurring
             commissionAmount = (first12MonthsAmount * (commissionPercentage / 100)) + (remainingAmount * 0.01);
         } else {
             commissionAmount = dpp * (commissionPercentage / 100);
@@ -54,49 +46,78 @@ export class CommissionCalculator {
         return { commissionAmount, commissionPercentage };
     }
 
-    private static calculateResellCommission(
+    /**
+     * Komisi sales resell + hitung margin sekaligus.
+     * - price = subscription / totalAccount (null jika recurring)
+     * - markup = price - modal (null jika recurring, 0 jika modal = 0)
+     * - margin: (markup/price)*100, default 2.5% jika modal = 0
+     * - Komisi: recurring 0.5%, margin >= 15% → 5%, >= 10% → 4%, < 10% → 2.5%
+     */
+    static resellSalesCommission(
         status: SnapshotStatus,
-        dpp: number,
-        margin: number
-    ) {
+        subscription: number,
+        totalAccount: number,
+        modal: number
+    ): { commissionAmount: number; commissionPercentage: number; price: number | null; markup: number | null; margin: number | null } {
+        const isNewUpgradeProrate = ['new', 'prorate', 'upgrade'].includes(status);
+
+        let price: number | null = null;
+        let markup: number | null = null;
+        let margin: number | null = null;
+
+        if (isNewUpgradeProrate) {
+            const account = totalAccount || 1;
+            price = subscription / account;
+
+            if (modal === 0) {
+                markup = 0;
+                margin = 2.5;
+            } else {
+                markup = price - modal;
+                margin = price > 0 ? (markup / price) * 100 : 0;
+            }
+        }
+
         let commissionPercentage = 0;
 
         if (status === 'recurring') {
             commissionPercentage = 0.5;
-        } else if (status === 'new' || status === 'upgrade' || status === 'prorate' || status === 'termin') {
-            // Tiered percentage based on margin
-            if (margin >= 15) {
+        } else if (isNewUpgradeProrate || status === 'termin') {
+            if ((margin ?? 0) >= 15) {
                 commissionPercentage = 5;
-            } else if (margin >= 10) {
+            } else if ((margin ?? 0) >= 10) {
                 commissionPercentage = 4;
             } else {
                 commissionPercentage = 2.5;
             }
         } else {
-            commissionPercentage = 2.5; // Default fallback
+            commissionPercentage = 2.5;
         }
 
-        return { 
-            commissionAmount: dpp * (commissionPercentage / 100), 
-            commissionPercentage 
+        return {
+            commissionAmount: subscription * (commissionPercentage / 100),
+            commissionPercentage,
+            price,
+            markup,
+            margin
         };
     }
 
     /**
-     * Calculate implementator commission with prorata and churn count logic.
+     * Komisi implementator dengan prorata dan churn count.
+     * - Prorata: dpp / monthPeriod (untuk new/upgrade/prorate/termin)
+     * - recurring: 1%, churn > 0: 17.5% (base), tanpa churn: 20% (retention)
      */
-    static calculateImplementatorCommission(
+    static implementatorCommission(
         status: SnapshotStatus,
         dpp: number,
         churnCount: number,
         monthPeriod: number
     ): { implementatorCommission: number; implementatorCommissionPercentage: number; type: 'base' | 'retention' | 'recurring' } {
         let proratedDpp = dpp;
-        
-        // Prorate for new or upgrade
+
         if (status === 'new' || status === 'upgrade' || status === 'prorate' || status === 'termin') {
-            const period = monthPeriod || 1;
-            proratedDpp = dpp / period;
+            proratedDpp = dpp / (monthPeriod || 1);
         }
 
         let percentage = 0;

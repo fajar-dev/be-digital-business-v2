@@ -51,6 +51,7 @@ api.get('/employee/:id/hierarchy', authMiddleware, (c) => employeeController.get
 // Protected Invoice Routes
 api.get('/invoice/:id/internal', (c) => invoiceController.internalInvoice(c));
 api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvoice(c));
+api.get('/invoice/:id/resell', (c) => invoiceController.resellInvoice(c));
 
 // Protected Commission Routes
 api.get('/commission/:id/implementator', (c) => commissionController.implementatorCommission(c));

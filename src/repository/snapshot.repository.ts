@@ -39,6 +39,18 @@ export class SnapshotRepository implements ISnapshotRepository {
         return rows as any[];
     }
 
+    async getResellInvoice(salesId: string, startDate: string, endDate: string): Promise<any[]> {
+        const query = `
+            SELECT s.*
+            FROM snapshots s
+            WHERE s.sales_id = ? 
+              AND s.paid_date BETWEEN ? AND ?
+              AND s.service_type = 'resell'
+        `;
+        const [rows] = await this.dbPool.query(query, [salesId, startDate, endDate]);
+        return rows as any[];
+    }
+
     async deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any> {
         const query = `
             DELETE FROM snapshots
