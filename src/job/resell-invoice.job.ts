@@ -4,7 +4,7 @@ import { SnapshotService } from '../service/snapshot.service';
 import { SnapshotRepository } from '../repository/snapshot.repository';
 import { dashboardPool, nisPool } from '../config/database';
 import { PeriodHelper } from '../helper/period';
-import { differenceInDays, getDaysInMonth, endOfMonth, addDays } from 'date-fns';
+import { differenceInDays, getDaysInMonth, endOfMonth, addDays, startOfDay } from 'date-fns';
 
 const nisRepository = new NisRepository(nisPool);
 const nisService = new NisService(nisRepository);
@@ -48,36 +48,51 @@ async function syncResellInvoices() {
                 let finalMonthPeriod = row.month;
 
                 if (row.period_start_date && row.period_end_date) {
-                    const periodStartDate = new Date(row.period_start_date);
-                    const periodEndDate = new Date(row.period_end_date);
-                    
-                    // Hitung total hari dalam semua bulan kalender yang dicakup periode
-                    let totalDaysInMonths = 0;
-                    let tempMonth = new Date(periodStartDate.getFullYear(), periodStartDate.getMonth(), 1);
-                    const lastMonth = new Date(periodEndDate.getFullYear(), periodEndDate.getMonth(), 1);
-                    while (tempMonth <= lastMonth) {
-                        totalDaysInMonths += getDaysInMonth(tempMonth);
-                        tempMonth = new Date(tempMonth.getFullYear(), tempMonth.getMonth() + 1, 1);
-                    }
-                    
-                    const actualDays = differenceInDays(periodEndDate, periodStartDate) + 1;
+                    const periodStartDate = startOfDay(new Date(row.period_start_date));
+                    const periodEndDate = startOfDay(new Date(row.period_end_date));
                     const baseModal = Number(row.modal) || 0;
-                    
-                    // Modal prorata = (modal / total hari semua bulan) * hari aktual
-                    finalModal = (baseModal / totalDaysInMonths) * actualDays;
-                    
-                    // Month period prorata per chunk bulan
-                    let monthPeriod = 0;
-                    let current = periodStartDate;
-                    while (current <= periodEndDate) {
-                        const monthEnd = endOfMonth(current);
-                        const chunkEnd = monthEnd < periodEndDate ? monthEnd : periodEndDate;
-                        const daysInChunk = differenceInDays(chunkEnd, current) + 1;
-                        const daysInMonth = getDaysInMonth(current);
-                        monthPeriod += daysInChunk / daysInMonth;
-                        current = addDays(chunkEnd, 1);
+
+                    // Cek apakah periode tepat kelipatan bulan
+                    // Contoh: 19 Apr - 18 May = 1 bulan (endDate + 1 hari = tanggal yang sama dengan startDate)
+                    const nextDayAfterEnd = addDays(periodEndDate, 1);
+                    const isExactMonth = nextDayAfterEnd.getDate() === periodStartDate.getDate();
+
+                    if (isExactMonth) {
+                        // Hitung jumlah bulan langsung
+                        const months = (nextDayAfterEnd.getFullYear() - periodStartDate.getFullYear()) * 12
+                            + (nextDayAfterEnd.getMonth() - periodStartDate.getMonth());
+                        finalMonthPeriod = months;
+                        finalModal = baseModal;
+                    } else {
+                        // Tanggal janggal: hitung prorata per chunk bulan
+                        // Hitung total hari dalam semua bulan kalender yang dicakup periode
+                        let totalDaysInMonths = 0;
+                        let tempMonth = new Date(periodStartDate.getFullYear(), periodStartDate.getMonth(), 1);
+                        const lastMonth = new Date(periodEndDate.getFullYear(), periodEndDate.getMonth(), 1);
+                        while (tempMonth <= lastMonth) {
+                            totalDaysInMonths += getDaysInMonth(tempMonth);
+                            tempMonth = new Date(tempMonth.getFullYear(), tempMonth.getMonth() + 1, 1);
+                        }
+
+                        // actualDays inklusif (1 Apr - 10 Apr = 10 hari)
+                        const actualDays = differenceInDays(periodEndDate, periodStartDate) + 1;
+
+                        // Modal prorata = (modal / total hari semua bulan) * hari aktual
+                        finalModal = (baseModal / totalDaysInMonths) * actualDays;
+
+                        // Month period prorata per chunk bulan
+                        let monthPeriod = 0;
+                        let current = periodStartDate;
+                        while (current <= periodEndDate) {
+                            const monthEnd = startOfDay(endOfMonth(current));
+                            const chunkEnd = monthEnd < periodEndDate ? monthEnd : periodEndDate;
+                            const daysInChunk = differenceInDays(chunkEnd, current) + 1;
+                            const daysInMonth = getDaysInMonth(current);
+                            monthPeriod += daysInChunk / daysInMonth;
+                            current = addDays(chunkEnd, 1);
+                        }
+                        finalMonthPeriod = monthPeriod;
                     }
-                    finalMonthPeriod = monthPeriod;
                 }
 
                 await snapshotService.insertSnapshot({

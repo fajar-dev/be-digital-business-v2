@@ -10,6 +10,25 @@ export class Calculate {
     }
 
     /**
+     * Konversi monthPeriod desimal ke format human-readable
+     * Contoh: 7.322581 → "7 Months 10 Days", 14.0 → "1 Year 2 Months", 22.1 → "1 Year 10 Months 3 Days"
+     */
+    static monthPeriodSummary(monthPeriod: number): string {
+        const totalMonths = Math.trunc(monthPeriod);
+        const days = Math.round((monthPeriod - totalMonths) * 30);
+
+        const years = Math.trunc(totalMonths / 12);
+        const months = totalMonths % 12;
+
+        const parts: string[] = [];
+        if (years > 0) parts.push(`${years} ${years === 1 ? 'Year' : 'Years'}`);
+        if (months > 0) parts.push(`${months} ${months === 1 ? 'Month' : 'Months'}`);
+        if (days > 0) parts.push(`${days} ${days === 1 ? 'Day' : 'Days'}`);
+
+        return parts.length > 0 ? parts.join(' ') : '0 Days';
+    }
+
+    /**
      * Komisi sales internal.
      * - upgrade/prorate: 20%
      * - new/termin + crossSell > 0: 15%, tanpa crossSell: 12%
@@ -152,6 +171,6 @@ export class Calculate {
         const percentage = previous !== 0 ? (growth / previous) * 100 : (current > 0 ? 100 : 0);
         const trend = growth >= 0 ? 'up' : 'down';
 
-        return { trend, value: current, percentage, growth };
+        return { trend, value: current, percentage: Math.round(percentage * 10) / 10, growth };
     }
 }
