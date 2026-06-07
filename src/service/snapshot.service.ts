@@ -106,7 +106,7 @@ export class SnapshotService implements ISnapshotService {
                 totalSubscription += subscription;
             }
 
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount++;
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
         return { commissionNew, commissionRecurring, totalMrc, totalSubscription, churnCount, newAccount };
@@ -171,7 +171,7 @@ export class SnapshotService implements ISnapshotService {
             }
 
             if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount++;
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
         for (const row of resellSnapshots) {
@@ -192,7 +192,7 @@ export class SnapshotService implements ISnapshotService {
             }
 
             if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount++;
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
         return { commissionNew, commissionRecurring, totalMrc, totalSubscription, newCustomer: newCustomerIds.size, newAccount };
