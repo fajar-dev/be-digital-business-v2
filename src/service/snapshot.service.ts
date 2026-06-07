@@ -74,7 +74,8 @@ export class SnapshotService implements ISnapshotService {
             },
             mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
             subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
-            churnCount: Calculate.trend(current.churnCount, previous.churnCount)
+            churnCount: Calculate.trend(current.churnCount, previous.churnCount),
+            newAccount: Calculate.trend(current.newAccount, previous.newAccount)
         };
     }
 
@@ -86,6 +87,7 @@ export class SnapshotService implements ISnapshotService {
         let commissionRecurring = 0;
         let totalMrc = 0;
         let totalSubscription = 0;
+        let newAccount = 0;
 
         for (const row of snapshots) {
             const subscription = Number(row.subscription) || 0;
@@ -103,9 +105,11 @@ export class SnapshotService implements ISnapshotService {
                 totalMrc += Calculate.mrc(subscription, monthPeriod);
                 totalSubscription += subscription;
             }
+
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount++;
         }
 
-        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, churnCount };
+        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, churnCount, newAccount };
     }
 
     async getSalesCommissionSummary(employeeId: string, startDate: string, endDate: string): Promise<any> {
@@ -132,7 +136,7 @@ export class SnapshotService implements ISnapshotService {
             mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
             subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
             newCustomer: Calculate.trend(current.newCustomer, previous.newCustomer),
-            newUser: Calculate.trend(current.newUser, previous.newUser)
+            newAccount: Calculate.trend(current.newAccount, previous.newAccount)
         };
     }
 
@@ -146,7 +150,7 @@ export class SnapshotService implements ISnapshotService {
         let commissionRecurring = 0;
         let totalMrc = 0;
         let totalSubscription = 0;
-        let newUser = 0;
+        let newAccount = 0;
         const newCustomerIds = new Set<string>();
 
         for (const row of internalSnapshots) {
@@ -167,7 +171,7 @@ export class SnapshotService implements ISnapshotService {
             }
 
             if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newUser++;
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount++;
         }
 
         for (const row of resellSnapshots) {
@@ -188,10 +192,10 @@ export class SnapshotService implements ISnapshotService {
             }
 
             if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newUser++;
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount++;
         }
 
-        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, newCustomer: newCustomerIds.size, newUser };
+        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, newCustomer: newCustomerIds.size, newAccount };
     }
 
     async getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any> {
