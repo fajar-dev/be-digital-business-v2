@@ -140,4 +140,18 @@ export class Calculate {
             type
         };
     }
+
+    /**
+     * Hitung trend: perbandingan value bulan ini vs bulan lalu.
+     * - trend: 'up' | 'down'
+     * - percentage: growth percentage
+     * - growth: selisih value
+     */
+    static trend(current: number, previous: number): { trend: string; value: number; percentage: number; growth: number } {
+        const growth = current - previous;
+        const percentage = previous !== 0 ? (growth / previous) * 100 : (current > 0 ? 100 : 0);
+        const trend = growth >= 0 ? 'up' : 'down';
+
+        return { trend, value: current, percentage, growth };
+    }
 }

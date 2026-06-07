@@ -51,6 +51,33 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getImplementatorCommissionSummary(implementatorId: string, startDate: string, endDate: string): Promise<any> {
+        // Hitung periode bulan lalu
+        const start = new Date(startDate);
+        const prevEnd = new Date(start);
+        prevEnd.setDate(prevEnd.getDate() - 1);
+        const prevStart = new Date(prevEnd);
+        prevStart.setDate(prevStart.getDate() - (Math.round((new Date(endDate).getTime() - start.getTime()) / (1000 * 60 * 60 * 24))));
+        const prevStartDate = prevStart.toISOString().split('T')[0];
+        const prevEndDate = prevEnd.toISOString().split('T')[0];
+
+        const [current, previous] = await Promise.all([
+            this.aggregateImplementatorCommission(implementatorId, startDate, endDate),
+            this.aggregateImplementatorCommission(implementatorId, prevStartDate, prevEndDate)
+        ]);
+
+        return {
+            commission: {
+                new: Calculate.trend(current.commissionNew, previous.commissionNew),
+                recurring: Calculate.trend(current.commissionRecurring, previous.commissionRecurring),
+                total: Calculate.trend(current.commissionNew + current.commissionRecurring, previous.commissionNew + previous.commissionRecurring)
+            },
+            mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
+            subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+            churnCount: Calculate.trend(current.churnCount, previous.churnCount)
+        };
+    }
+
+    private async aggregateImplementatorCommission(implementatorId: string, startDate: string, endDate: string) {
         const snapshots = await this.snapshotRepository.getSnapshotByImplementator(implementatorId, startDate, endDate);
         const churnCount = await this.nisService.getChurnCountByImplementator(implementatorId, startDate, endDate);
 
@@ -77,15 +104,38 @@ export class SnapshotService implements ISnapshotService {
             }
         }
 
-        return {
-            commission: { new: commissionNew, recurring: commissionRecurring, total: commissionNew + commissionRecurring },
-            mrc: totalMrc,
-            subscription: totalSubscription,
-            churnCount
-        };
+        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, churnCount };
     }
 
     async getSalesCommissionSummary(employeeId: string, startDate: string, endDate: string): Promise<any> {
+        // Hitung periode bulan lalu dari startDate
+        const start = new Date(startDate);
+        const prevEnd = new Date(start);
+        prevEnd.setDate(prevEnd.getDate() - 1);
+        const prevStart = new Date(prevEnd);
+        prevStart.setDate(prevStart.getDate() - (Math.round((new Date(endDate).getTime() - start.getTime()) / (1000 * 60 * 60 * 24))));
+        const prevStartDate = prevStart.toISOString().split('T')[0];
+        const prevEndDate = prevEnd.toISOString().split('T')[0];
+
+        const [current, previous] = await Promise.all([
+            this.aggregateSalesCommission(employeeId, startDate, endDate),
+            this.aggregateSalesCommission(employeeId, prevStartDate, prevEndDate)
+        ]);
+
+        return {
+            commission: {
+                new: Calculate.trend(current.commissionNew, previous.commissionNew),
+                recurring: Calculate.trend(current.commissionRecurring, previous.commissionRecurring),
+                total: Calculate.trend(current.commissionNew + current.commissionRecurring, previous.commissionNew + previous.commissionRecurring)
+            },
+            mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
+            subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+            newCustomer: Calculate.trend(current.newCustomer, previous.newCustomer),
+            newUser: Calculate.trend(current.newUser, previous.newUser)
+        };
+    }
+
+    private async aggregateSalesCommission(employeeId: string, startDate: string, endDate: string) {
         const [internalSnapshots, resellSnapshots] = await Promise.all([
             this.snapshotRepository.getInternalInvoice(employeeId, startDate, endDate),
             this.snapshotRepository.getResellInvoice(employeeId, startDate, endDate)
@@ -95,6 +145,8 @@ export class SnapshotService implements ISnapshotService {
         let commissionRecurring = 0;
         let totalMrc = 0;
         let totalSubscription = 0;
+        let newUser = 0;
+        const newCustomerIds = new Set<string>();
 
         for (const row of internalSnapshots) {
             const subscription = Number(row.subscription) || 0;
@@ -112,6 +164,9 @@ export class SnapshotService implements ISnapshotService {
                 totalMrc += Calculate.mrc(subscription, monthPeriod);
                 totalSubscription += subscription;
             }
+
+            if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newUser++;
         }
 
         for (const row of resellSnapshots) {
@@ -130,13 +185,12 @@ export class SnapshotService implements ISnapshotService {
                 totalMrc += Calculate.mrc(subscription, monthPeriod);
                 totalSubscription += subscription;
             }
+
+            if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
+            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newUser++;
         }
 
-        return {
-            commission: { new: commissionNew, recurring: commissionRecurring, total: commissionNew + commissionRecurring },
-            mrc: totalMrc,
-            subscription: totalSubscription
-        };
+        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, newCustomer: newCustomerIds.size, newUser };
     }
 
     async getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any> {
