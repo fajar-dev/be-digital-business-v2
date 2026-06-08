@@ -62,4 +62,25 @@ export class CommissionController {
         const data = await this.snapshotService.getManagerTeamSummary(employees, period.startDate, period.endDate);
         return ApiResponse.success(c, data, "manager team commission retrieved successfully");
     }
+
+    async managerCommission(c: Context) {
+        const { month: monthQuery, year: yearQuery } = c.req.query();
+        const managerId = c.req.param('id');
+
+        if (!managerId) {
+            return ApiResponse.error(c, "id is required", 400);
+        }
+
+        const manager = await this.employeeService.getManagerById(managerId);
+        if (!manager.length) {
+            return ApiResponse.error(c, "manager not found", 404);
+        }
+
+        const staff = await this.employeeService.getStaff(manager[0].id);
+        const employeeIds = staff.map((s: any) => s.employee_id);
+
+        const period = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
+        const data = await this.snapshotService.getManagerCommissionSummary(employeeIds, period.startDate, period.endDate);
+        return ApiResponse.success(c, data, "manager commission retrieved successfully");
+    }
 }

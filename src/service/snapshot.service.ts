@@ -312,4 +312,50 @@ export class SnapshotService implements ISnapshotService {
 
         return results;
     }
+
+    async getManagerCommissionSummary(employeeIds: string[], startDate: string, endDate: string): Promise<any> {
+        // Hitung periode bulan lalu
+        const start = new Date(startDate);
+        const prevEnd = new Date(start);
+        prevEnd.setDate(prevEnd.getDate() - 1);
+        const prevStart = new Date(prevEnd);
+        prevStart.setDate(prevStart.getDate() - (Math.round((new Date(endDate).getTime() - start.getTime()) / (1000 * 60 * 60 * 24))));
+        const prevStartDate = prevStart.toISOString().split('T')[0];
+        const prevEndDate = prevEnd.toISOString().split('T')[0];
+
+        // Aggregate semua staff untuk current dan previous period
+        const [currentResults, previousResults] = await Promise.all([
+            Promise.all(employeeIds.map(id => this.aggregateSalesCommission(id, startDate, endDate))),
+            Promise.all(employeeIds.map(id => this.aggregateSalesCommission(id, prevStartDate, prevEndDate)))
+        ]);
+
+        // Sum across all staff
+        const sumData = (results: typeof currentResults) => results.reduce((acc, data) => ({
+            commissionNew: acc.commissionNew + data.commissionNew,
+            commissionRecurring: acc.commissionRecurring + data.commissionRecurring,
+            totalMrc: acc.totalMrc + data.totalMrc,
+            totalSubscription: acc.totalSubscription + data.totalSubscription,
+            newCustomer: acc.newCustomer + data.newCustomer,
+            newAccount: acc.newAccount + data.newAccount
+        }), { commissionNew: 0, commissionRecurring: 0, totalMrc: 0, totalSubscription: 0, newCustomer: 0, newAccount: 0 });
+
+        const current = sumData(currentResults);
+        const previous = sumData(previousResults);
+
+        const currentTotal = current.commissionNew + current.commissionRecurring;
+        const previousTotal = previous.commissionNew + previous.commissionRecurring;
+
+        return {
+            managerCommission: Calculate.trend(currentTotal * 0.25, previousTotal * 0.25),
+            commission: {
+                new: Calculate.trend(current.commissionNew, previous.commissionNew),
+                recurring: Calculate.trend(current.commissionRecurring, previous.commissionRecurring),
+                total: Calculate.trend(currentTotal, previousTotal)
+            },
+            mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
+            subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+            newCustomer: Calculate.trend(current.newCustomer, previous.newCustomer),
+            newAccount: Calculate.trend(current.newAccount, previous.newAccount)
+        };
+    }
 }
