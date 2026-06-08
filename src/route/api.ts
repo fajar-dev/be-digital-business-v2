@@ -31,7 +31,7 @@ const authService = new AuthService(employeeService);
 const authController = new AuthController(authService);
 const employeeController = new EmployeeController(employeeService);
 const invoiceController = new InvoiceController(snapshotService);
-const commissionController = new CommissionController(snapshotService);
+const commissionController = new CommissionController(snapshotService, employeeService);
 const additionalController = new AdditionalController();
 
 // Public Auth Routes
@@ -56,6 +56,9 @@ api.get('/invoice/:id/resell', (c) => invoiceController.resellInvoice(c));
 // Protected Commission Routes
 api.get('/commission/:id/implementator', (c) => commissionController.implementatorCommission(c));
 api.get('/commission/:id/sales', (c) => commissionController.salesCommission(c));
+
+// Protected Team Routes
+api.get('/team/:id/manager', (c) => commissionController.managerTeam(c));
 
 // Additional Routes
 api.get('/additional/period', (c) => additionalController.getPeriod(c));

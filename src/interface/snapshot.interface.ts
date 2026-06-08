@@ -38,4 +38,5 @@ export interface ISnapshotService {
     getSalesCommissionSummary(employeeId: string, startDate: string, endDate: string): Promise<any>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;
+    getManagerTeamSummary(employees: { employeeId: string; name: string; photoProfile: string }[], startDate: string, endDate: string): Promise<any>;
 }

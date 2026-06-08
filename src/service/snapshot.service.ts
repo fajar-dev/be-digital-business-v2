@@ -287,4 +287,29 @@ export class SnapshotService implements ISnapshotService {
     async insertSnapshot(data: SnapshotData): Promise<any> {
         return await this.snapshotRepository.insertSnapshot(data);
     }
+
+    async getManagerTeamSummary(employees: { employeeId: string; name: string; photoProfile: string }[], startDate: string, endDate: string): Promise<any> {
+        const results = await Promise.all(
+            employees.map(async (emp) => {
+                const data = await this.aggregateSalesCommission(emp.employeeId, startDate, endDate);
+                const totalCommission = data.commissionNew + data.commissionRecurring;
+
+                return {
+                    employeeId: emp.employeeId,
+                    name: emp.name,
+                    photoProfile: emp.photoProfile,
+                    detail: {
+                        commission: totalCommission,
+                        mrc: data.totalMrc,
+                        subscription: data.totalSubscription,
+                        newCustomer: data.newCustomer,
+                        newAccount: data.newAccount
+                    },
+                    managerCommission: totalCommission * 0.25
+                };
+            })
+        );
+
+        return results;
+    }
 }

@@ -122,4 +122,19 @@ export class SnapshotRepository implements ISnapshotRepository {
         const [result] = await this.dbPool.query(query, values);
         return result;
     }
+
+    async getSnapshotByManager(managerId: string, startDate: string, endDate: string): Promise<any[]> {
+        const query = `
+            SELECT 
+                s.*,
+                e.name AS sales_name,
+                e.photo_profile AS sales_photo
+            FROM snapshots s
+            LEFT JOIN employees e ON s.sales_id = e.employee_id
+            WHERE s.manager_sales_id = ?
+              AND s.paid_date BETWEEN ? AND ?
+        `;
+        const [rows] = await this.dbPool.query(query, [managerId, startDate, endDate]);
+        return rows as any[];
+    }
 }
