@@ -80,13 +80,8 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getImplementatorCommissionYearlySummary(implementatorId: string, year: number): Promise<any[]> {
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-
-        const maxMonth = year === currentYear ? currentMonth : 12;
-
         const promises = [];
-        for (let month = 1; month <= maxMonth; month++) {
+        for (let month = 1; month <= 12; month++) {
             const monthStr = month.toString().padStart(2, '0');
             const startDate = `${year}-${monthStr}-01`;
             const endDate = new Date(year, month, 0).toISOString().split('T')[0];
@@ -166,14 +161,10 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getSalesCommissionYearlySummary(employeeId: string, year: number): Promise<any[]> {
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-
-        const maxMonth = year === currentYear ? currentMonth : 12;
         const results = [];
 
         const promises = [];
-        for (let month = 1; month <= maxMonth; month++) {
+        for (let month = 1; month <= 12; month++) {
             const monthStr = month.toString().padStart(2, '0');
             const startDate = `${year}-${monthStr}-01`;
             const endDate = new Date(year, month, 0).toISOString().split('T')[0];
@@ -369,14 +360,10 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getManagerTeamYearlySummary(employees: { employeeId: string; name: string; photoProfile: string }[], year: number): Promise<any> {
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-        const maxMonth = year === currentYear ? currentMonth : 12;
-
         const results = await Promise.all(
             employees.map(async (emp) => {
                 const promises = [];
-                for (let month = 1; month <= maxMonth; month++) {
+                for (let month = 1; month <= 12; month++) {
                     const monthStr = month.toString().padStart(2, '0');
                     const startDate = `${year}-${monthStr}-01`;
                     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
@@ -454,13 +441,8 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getManagerCommissionYearlySummary(employeeIds: string[], year: number): Promise<any[]> {
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-
-        const maxMonth = year === currentYear ? currentMonth : 12;
-
         const promises = [];
-        for (let month = 1; month <= maxMonth; month++) {
+        for (let month = 1; month <= 12; month++) {
             const monthStr = month.toString().padStart(2, '0');
             const startDate = `${year}-${monthStr}-01`;
             const endDate = new Date(year, month, 0).toISOString().split('T')[0];
