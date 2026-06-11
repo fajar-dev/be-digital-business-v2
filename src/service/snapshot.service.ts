@@ -79,6 +79,31 @@ export class SnapshotService implements ISnapshotService {
         };
     }
 
+    async getImplementatorCommissionYearlySummary(implementatorId: string, year: number): Promise<any[]> {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        const maxMonth = year === currentYear ? currentMonth : 12;
+
+        const promises = [];
+        for (let month = 1; month <= maxMonth; month++) {
+            const monthStr = month.toString().padStart(2, '0');
+            const startDate = `${year}-${monthStr}-01`;
+            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+            promises.push(this.aggregateImplementatorCommission(implementatorId, startDate, endDate));
+        }
+
+        const aggregatedData = await Promise.all(promises);
+
+        return aggregatedData.map(data => ({
+            commission: data.commissionNew + data.commissionRecurring,
+            mrc: data.totalMrc,
+            subscription: data.totalSubscription,
+            churnCount: data.churnCount,
+            newAccount: data.newAccount
+        }));
+    }
+
     private async aggregateImplementatorCommission(implementatorId: string, startDate: string, endDate: string) {
         const snapshots = await this.snapshotRepository.getSnapshotByImplementator(implementatorId, startDate, endDate);
         const churnCount = await this.nisService.getChurnCountByImplementator(implementatorId, startDate, endDate);

@@ -55,6 +55,7 @@ api.get('/invoice/:id/resell', (c) => invoiceController.resellInvoice(c));
 
 // Protected Commission Routes
 api.get('/commission/:id/implementator', (c) => commissionController.implementatorCommission(c));
+api.get('/commission/:id/implementator/yearly', (c) => commissionController.implementatorCommissionYearly(c));
 api.get('/commission/:id/sales', (c) => commissionController.salesCommission(c));
 api.get('/commission/:id/sales/yearly', (c) => commissionController.salesCommissionYearly(c));
 api.get('/commission/:id/manager', (c) => commissionController.managerCommission(c));

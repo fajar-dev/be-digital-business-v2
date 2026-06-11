@@ -35,6 +35,7 @@ export interface ISnapshotService {
     getResellInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getImplementatorInvoiceDetail(implementatorId: string, startDate: string, endDate: string): Promise<any>;
     getImplementatorCommissionSummary(implementatorId: string, startDate: string, endDate: string): Promise<any>;
+    getImplementatorCommissionYearlySummary(implementatorId: string, year: number): Promise<any[]>;
     getSalesCommissionSummary(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getSalesCommissionYearlySummary(employeeId: string, year: number): Promise<any[]>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
