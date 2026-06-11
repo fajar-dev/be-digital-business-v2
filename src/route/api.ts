@@ -59,6 +59,7 @@ api.get('/commission/:id/implementator/yearly', (c) => commissionController.impl
 api.get('/commission/:id/sales', (c) => commissionController.salesCommission(c));
 api.get('/commission/:id/sales/yearly', (c) => commissionController.salesCommissionYearly(c));
 api.get('/commission/:id/manager', (c) => commissionController.managerCommission(c));
+api.get('/commission/:id/manager/yearly', (c) => commissionController.managerCommissionYearly(c));
 
 // Protected Team Routes
 api.get('/team/:id/manager', (c) => commissionController.managerTeam(c));
