@@ -140,6 +140,36 @@ export class SnapshotService implements ISnapshotService {
         };
     }
 
+    async getSalesCommissionYearlySummary(employeeId: string, year: number): Promise<any[]> {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        const maxMonth = year === currentYear ? currentMonth : 12;
+        const results = [];
+
+        const promises = [];
+        for (let month = 1; month <= maxMonth; month++) {
+            const monthStr = month.toString().padStart(2, '0');
+            const startDate = `${year}-${monthStr}-01`;
+            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+            promises.push(this.aggregateSalesCommission(employeeId, startDate, endDate));
+        }
+
+        const aggregatedData = await Promise.all(promises);
+
+        for (const data of aggregatedData) {
+            results.push({
+                commission: data.commissionNew + data.commissionRecurring,
+                mrc: data.totalMrc,
+                subscription: data.totalSubscription,
+                newCustomer: data.newCustomer,
+                newAccount: data.newAccount
+            });
+        }
+
+        return results;
+    }
+
     private async aggregateSalesCommission(employeeId: string, startDate: string, endDate: string) {
         const [internalSnapshots, resellSnapshots] = await Promise.all([
             this.snapshotRepository.getInternalInvoice(employeeId, startDate, endDate),

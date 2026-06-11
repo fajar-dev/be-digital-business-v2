@@ -37,6 +37,23 @@ export class CommissionController {
         return ApiResponse.success(c, data, "sales commission retrieved successfully");
     }
 
+    async salesCommissionYearly(c: Context) {
+        const { year: yearQuery } = c.req.query();
+        const employeeId = c.req.param('id');
+
+        if (!employeeId) {
+            return ApiResponse.error(c, "id is required", 400);
+        }
+
+        const year = yearQuery ? parseInt(yearQuery, 10) : new Date().getFullYear();
+        if (isNaN(year)) {
+            return ApiResponse.error(c, "invalid year parameter", 400);
+        }
+
+        const data = await this.snapshotService.getSalesCommissionYearlySummary(employeeId, year);
+        return ApiResponse.success(c, data, "sales commission yearly retrieved successfully");
+    }
+
     async managerTeam(c: Context) {
         const { month: monthQuery, year: yearQuery } = c.req.query();
         const managerId = c.req.param('id');
