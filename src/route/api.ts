@@ -63,6 +63,7 @@ api.get('/commission/:id/manager/yearly', (c) => commissionController.managerCom
 
 // Protected Team Routes
 api.get('/team/:id/manager', (c) => commissionController.managerTeam(c));
+api.get('/team/:id/manager/yearly', (c) => commissionController.managerTeamYearly(c));
 
 // Additional Routes
 api.get('/additional/period', (c) => additionalController.getPeriod(c));

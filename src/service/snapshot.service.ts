@@ -368,6 +368,45 @@ export class SnapshotService implements ISnapshotService {
         return results;
     }
 
+    async getManagerTeamYearlySummary(employees: { employeeId: string; name: string; photoProfile: string }[], year: number): Promise<any> {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+        const maxMonth = year === currentYear ? currentMonth : 12;
+
+        const results = await Promise.all(
+            employees.map(async (emp) => {
+                const promises = [];
+                for (let month = 1; month <= maxMonth; month++) {
+                    const monthStr = month.toString().padStart(2, '0');
+                    const startDate = `${year}-${monthStr}-01`;
+                    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+                    promises.push(this.aggregateSalesCommission(emp.employeeId, startDate, endDate));
+                }
+
+                const monthlyData = await Promise.all(promises);
+
+                return {
+                    employeeId: emp.employeeId,
+                    name: emp.name,
+                    photoProfile: emp.photoProfile,
+                    monthly: monthlyData.map(data => {
+                        const totalCommission = data.commissionNew + data.commissionRecurring;
+                        return {
+                            commission: totalCommission,
+                            mrc: data.totalMrc,
+                            subscription: data.totalSubscription,
+                            newCustomer: data.newCustomer,
+                            newAccount: data.newAccount,
+                            managerCommission: totalCommission * 0.25
+                        };
+                    })
+                };
+            })
+        );
+
+        return results;
+    }
+
     async getManagerCommissionSummary(employeeIds: string[], startDate: string, endDate: string): Promise<any> {
         // Hitung periode bulan lalu
         const start = new Date(startDate);
