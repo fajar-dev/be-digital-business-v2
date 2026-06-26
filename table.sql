@@ -1,4 +1,4 @@
-CREATE TABLE employee (
+CREATE TABLE employees (
     id INT PRIMARY KEY,
     employee_id VARCHAR(20) NOT NULL,
     name VARCHAR(255) NOT NULL,
