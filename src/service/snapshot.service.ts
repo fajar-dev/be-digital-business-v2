@@ -1,6 +1,7 @@
 import { ISnapshotRepository, ISnapshotService, SnapshotData } from '../interface/snapshot.interface';
 import { Calculate } from '../helper/calculate';
 import { INisService } from '../interface/nis.interface';
+import { PeriodHelper } from '../helper/period';
 
 export class SnapshotService implements ISnapshotService {
     constructor(
@@ -80,11 +81,10 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getImplementatorCommissionYearlySummary(implementatorId: string, year: number): Promise<any[]> {
+        const periodHelper = new PeriodHelper();
         const promises = [];
         for (let month = 1; month <= 12; month++) {
-            const monthStr = month.toString().padStart(2, '0');
-            const startDate = `${year}-${monthStr}-01`;
-            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+            const { startDate, endDate } = periodHelper.getStartAndEndDateForMonth(year, month);
             promises.push(this.aggregateImplementatorCommission(implementatorId, startDate, endDate));
         }
 
@@ -161,29 +161,22 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getSalesCommissionYearlySummary(employeeId: string, year: number): Promise<any[]> {
-        const results = [];
-
+        const periodHelper = new PeriodHelper();
         const promises = [];
         for (let month = 1; month <= 12; month++) {
-            const monthStr = month.toString().padStart(2, '0');
-            const startDate = `${year}-${monthStr}-01`;
-            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+            const { startDate, endDate } = periodHelper.getStartAndEndDateForMonth(year, month);
             promises.push(this.aggregateSalesCommission(employeeId, startDate, endDate));
         }
 
         const aggregatedData = await Promise.all(promises);
 
-        for (const data of aggregatedData) {
-            results.push({
-                commission: data.commissionNew + data.commissionRecurring,
-                mrc: data.totalMrc,
-                subscription: data.totalSubscription,
-                newCustomer: data.newCustomer,
-                newAccount: data.newAccount
-            });
-        }
-
-        return results;
+        return aggregatedData.map(data => ({
+            commission: data.commissionNew + data.commissionRecurring,
+            mrc: data.totalMrc,
+            subscription: data.totalSubscription,
+            newCustomer: data.newCustomer,
+            newAccount: data.newAccount
+        }));
     }
 
     private async aggregateSalesCommission(employeeId: string, startDate: string, endDate: string) {
@@ -362,11 +355,10 @@ export class SnapshotService implements ISnapshotService {
     async getManagerTeamYearlySummary(employees: { employeeId: string; name: string; photoProfile: string }[], year: number): Promise<any> {
         const results = await Promise.all(
             employees.map(async (emp) => {
+                const periodHelper = new PeriodHelper();
                 const promises = [];
                 for (let month = 1; month <= 12; month++) {
-                    const monthStr = month.toString().padStart(2, '0');
-                    const startDate = `${year}-${monthStr}-01`;
-                    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+                    const { startDate, endDate } = periodHelper.getStartAndEndDateForMonth(year, month);
                     promises.push(this.aggregateSalesCommission(emp.employeeId, startDate, endDate));
                 }
 
@@ -441,11 +433,10 @@ export class SnapshotService implements ISnapshotService {
     }
 
     async getManagerCommissionYearlySummary(employeeIds: string[], year: number): Promise<any[]> {
+        const periodHelper = new PeriodHelper();
         const promises = [];
         for (let month = 1; month <= 12; month++) {
-            const monthStr = month.toString().padStart(2, '0');
-            const startDate = `${year}-${monthStr}-01`;
-            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+            const { startDate, endDate } = periodHelper.getStartAndEndDateForMonth(year, month);
 
             promises.push(
                 Promise.all(employeeIds.map(id => this.aggregateSalesCommission(id, startDate, endDate)))
