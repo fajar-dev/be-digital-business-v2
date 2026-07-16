@@ -93,7 +93,7 @@ export class Calculate {
                 margin = 2.5;
             } else {
                 markup = price - modal;
-                margin = price > 0 ? (markup / price) * 100 : 0;
+                margin = price > 0 ? (markup / modal) * 100 : 0;
             }
         }
 
