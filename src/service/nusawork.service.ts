@@ -113,6 +113,7 @@ export class NusaworkService implements INusaworkService {
         const accountManager = employees.filter((emp: any) =>
             emp.employee_id === '0202589' ||
             emp.employee_id === '0201325' ||
+            emp.employee_id === '0202314' ||
             emp.organization_name === 'Finance' ||
             emp.organization_name === 'BIS' ||
             emp.job_level === 'VP' ||
