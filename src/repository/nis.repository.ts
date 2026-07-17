@@ -45,7 +45,7 @@ export class NisRepository implements INisRepository {
             LEFT JOIN CustomerInvoiceTemp_Custom citc 
                 ON cit.InvoiceNum = citc.InvoiceNum AND cit.Urut = citc.Urut
             LEFT JOIN CustomerServices cs 
-                ON cs.CustId = nci.CustId AND cs.ServiceId = cit.ServiceId
+                ON cs.CustServId = cit.CustServId
             LEFT JOIN (
                 SELECT CustServId, MIN(ContractUntil) AS ContractUntil
                 FROM CustomerServicesHistory
@@ -65,7 +65,7 @@ export class NisRepository implements INisRepository {
                 JOIN Services s2 
                     ON cs2.ServiceId = s2.ServiceId
                 WHERE (cs2.CustStatus IS NULL OR cs2.CustStatus <> 'NA')
-                AND (s2.ServiceCategory = 'digital_business' OR s2.ServiceCategory = 'access_business')
+                AND (s2.ServiceCategory = 'digital_business')
             ) AS cross_tbl 
                 ON cross_tbl.CustId = nci.CustId AND cross_tbl.ServiceId <> cs.ServiceId
             WHERE s.BusinessOperation = 'internal'
@@ -124,7 +124,7 @@ export class NisRepository implements INisRepository {
             LEFT JOIN CustomerInvoiceTemp_Custom citc 
                 ON cit.InvoiceNum = citc.InvoiceNum AND cit.Urut = citc.Urut
             LEFT JOIN CustomerServices cs 
-                ON cs.CustId = nci.CustId AND cs.ServiceId = cit.ServiceId
+                ON cs.CustServId = cit.CustServId
             LEFT JOIN CustomerServiceCost csc 
                 ON csc.customer_service_id = cs.CustServId
             LEFT JOIN (
