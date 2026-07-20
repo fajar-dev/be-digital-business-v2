@@ -45,7 +45,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.sales_photo || ''
                 },
                 subscription,
-                mrc: Calculate.mrc(subscription, monthPeriod),
+                mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage: implementatorCommissionPercentage,
                 commission: implementatorCommission
             };
@@ -122,7 +122,9 @@ export class SnapshotService implements ISnapshotService {
                 commissionRecurring += implementatorCommission;
             } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
                 commissionNew += implementatorCommission;
-                totalMrc += Calculate.mrc(subscription, monthPeriod);
+                if (status !== 'termin') {
+                    totalMrc += Calculate.mrc(subscription, monthPeriod);
+                }
                 totalSubscription += subscription;
             }
 
@@ -205,7 +207,9 @@ export class SnapshotService implements ISnapshotService {
                 commissionRecurring += commissionAmount;
             } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
                 commissionNew += commissionAmount;
-                totalMrc += Calculate.mrc(subscription, monthPeriod);
+                if (status !== 'termin') {
+                    totalMrc += Calculate.mrc(subscription, monthPeriod);
+                }
                 totalSubscription += subscription;
             }
 
@@ -226,7 +230,9 @@ export class SnapshotService implements ISnapshotService {
                 commissionRecurring += commissionAmount;
             } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
                 commissionNew += commissionAmount;
-                totalMrc += Calculate.mrc(subscription, monthPeriod);
+                if (status !== 'termin') {
+                    totalMrc += Calculate.mrc(subscription, monthPeriod);
+                }
                 totalSubscription += subscription;
             }
 
@@ -272,7 +278,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.implementator_photo_profile || ''
                 },
                 subscription,
-                mrc: row.status === 'recurring' ? 0 : Calculate.mrc(subscription, monthPeriod),
+                mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage,
                 commission: commissionAmount
             };
@@ -312,7 +318,7 @@ export class SnapshotService implements ISnapshotService {
                 price,
                 markup,
                 margin,
-                mrc: Calculate.mrc(subscription, monthPeriod),
+                mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage,
                 commission: commissionAmount
             };
