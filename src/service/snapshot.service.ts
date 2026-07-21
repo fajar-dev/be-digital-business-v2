@@ -47,7 +47,8 @@ export class SnapshotService implements ISnapshotService {
                 subscription,
                 mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage: implementatorCommissionPercentage,
-                commission: implementatorCommission
+                commission: implementatorCommission,
+                isAdjust: Boolean(row.is_adjust)
             };
         });
     }
@@ -280,7 +281,8 @@ export class SnapshotService implements ISnapshotService {
                 subscription,
                 mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage,
-                commission: commissionAmount
+                commission: commissionAmount,
+                isAdjust: Boolean(row.is_adjust)
             };
         });
     }
@@ -320,7 +322,8 @@ export class SnapshotService implements ISnapshotService {
                 margin,
                 mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage,
-                commission: commissionAmount
+                commission: commissionAmount,
+                isAdjust: Boolean(row.is_adjust)
             };
         });
     }

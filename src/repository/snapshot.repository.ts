@@ -55,6 +55,7 @@ export class SnapshotRepository implements ISnapshotRepository {
         const query = `
             DELETE FROM snapshots
             WHERE service_type = ? AND paid_date BETWEEN ? AND ?
+              AND is_adjust = false
         `;
         const [result] = await this.dbPool.query(query, [serviceType, startDate, endDate]);
         return result;
@@ -73,26 +74,26 @@ export class SnapshotRepository implements ISnapshotRepository {
                 ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?
             ) ON DUPLICATE KEY UPDATE
-                invoice_number = VALUES(invoice_number),
-                sequence_number = VALUES(sequence_number),
-                paid_date = VALUES(paid_date),
-                subscription = VALUES(subscription),
-                status = VALUES(status),
-                month_period = VALUES(month_period),
-                total_account = VALUES(total_account),
-                customer_id = VALUES(customer_id),
-                customer_service_id = VALUES(customer_service_id),
-                customer_company = VALUES(customer_company),
-                contract_until_date = VALUES(contract_until_date),
-                service_group_id = VALUES(service_group_id),
-                service_id = VALUES(service_id),
-                service_name = VALUES(service_name),
-                service_type = VALUES(service_type),
-                cross_sell_count = VALUES(cross_sell_count),
-                sales_id = VALUES(sales_id),
-                manager_sales_id = VALUES(manager_sales_id),
-                implementator_id = VALUES(implementator_id),
-                modal = VALUES(modal)
+                invoice_number = IF(is_adjust, invoice_number, VALUES(invoice_number)),
+                sequence_number = IF(is_adjust, sequence_number, VALUES(sequence_number)),
+                paid_date = IF(is_adjust, paid_date, VALUES(paid_date)),
+                subscription = IF(is_adjust, subscription, VALUES(subscription)),
+                status = IF(is_adjust, status, VALUES(status)),
+                month_period = IF(is_adjust, month_period, VALUES(month_period)),
+                total_account = IF(is_adjust, total_account, VALUES(total_account)),
+                customer_id = IF(is_adjust, customer_id, VALUES(customer_id)),
+                customer_service_id = IF(is_adjust, customer_service_id, VALUES(customer_service_id)),
+                customer_company = IF(is_adjust, customer_company, VALUES(customer_company)),
+                contract_until_date = IF(is_adjust, contract_until_date, VALUES(contract_until_date)),
+                service_group_id = IF(is_adjust, service_group_id, VALUES(service_group_id)),
+                service_id = IF(is_adjust, service_id, VALUES(service_id)),
+                service_name = IF(is_adjust, service_name, VALUES(service_name)),
+                service_type = IF(is_adjust, service_type, VALUES(service_type)),
+                cross_sell_count = IF(is_adjust, cross_sell_count, VALUES(cross_sell_count)),
+                sales_id = IF(is_adjust, sales_id, VALUES(sales_id)),
+                manager_sales_id = IF(is_adjust, manager_sales_id, VALUES(manager_sales_id)),
+                implementator_id = IF(is_adjust, implementator_id, VALUES(implementator_id)),
+                modal = IF(is_adjust, modal, VALUES(modal))
         `;
 
         const values = [

@@ -33,5 +33,9 @@ CREATE TABLE snapshots (
     sales_id VARCHAR(20) NULL,
     manager_sales_id VARCHAR(20) NULL,
     implementator_id VARCHAR(20) NULL,
-    modal DECIMAL(15, 6) NULL
+    modal DECIMAL(15, 6) NULL,
+    is_adjust BOOLEAN NOT NULL DEFAULT false
 );
+
+-- Migration untuk database yang sudah ada:
+-- ALTER TABLE snapshots ADD COLUMN is_adjust BOOLEAN NOT NULL DEFAULT false;
