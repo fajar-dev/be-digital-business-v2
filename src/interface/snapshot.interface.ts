@@ -22,15 +22,28 @@ export interface SnapshotData {
     modal: number | null;
 }
 
+export interface SnapshotListFilters {
+    search?: string;
+    status?: string;
+    serviceType?: 'internal' | 'resell';
+    startDate?: string;
+    endDate?: string;
+    page: number;
+    limit: number;
+}
+
 export interface ISnapshotRepository {
     getInternalInvoice(salesId: string, startDate: string, endDate: string): Promise<any[]>;
     getResellInvoice(salesId: string, startDate: string, endDate: string): Promise<any[]>;
     getSnapshotByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<any[]>;
+    getSnapshots(filters: SnapshotListFilters): Promise<any[]>;
+    countSnapshots(filters: SnapshotListFilters): Promise<number>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;
 }
 
 export interface ISnapshotService {
+    getSnapshotList(filters: SnapshotListFilters): Promise<any>;
     getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getResellInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getImplementatorInvoiceDetail(implementatorId: string, startDate: string, endDate: string): Promise<any>;

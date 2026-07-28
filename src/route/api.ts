@@ -49,6 +49,7 @@ api.get('/employee/:id', authMiddleware, (c) => employeeController.getEmployeeBy
 api.get('/employee/:id/hierarchy', authMiddleware, (c) => employeeController.getEmployeeHierarchy(c));
 
 // Protected Invoice Routes
+api.get('/invoice/snapshot', (c) => invoiceController.snapshotList(c));
 api.get('/invoice/:id/internal', (c) => invoiceController.internalInvoice(c));
 api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvoice(c));
 api.get('/invoice/:id/resell', (c) => invoiceController.resellInvoice(c));

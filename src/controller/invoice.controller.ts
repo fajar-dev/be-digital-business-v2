@@ -9,6 +9,28 @@ export class InvoiceController {
         private readonly periodHelper: PeriodHelper = new PeriodHelper(),
     ) {}
 
+    async snapshotList(c: Context) {
+        const { search, status, type, month: monthQuery, year: yearQuery, page, limit } = c.req.query();
+
+        const pageNum = Math.max(1, Number(page) || 1);
+        const limitNum = Math.min(100, Math.max(1, Number(limit) || 10));
+        const serviceType = type === 'internal' || type === 'resell' ? type : undefined;
+
+        const { startDate, endDate } = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
+
+        const data = await this.snapshotService.getSnapshotList({
+            search: search || undefined,
+            status: status || undefined,
+            serviceType,
+            startDate,
+            endDate,
+            page: pageNum,
+            limit: limitNum
+        });
+
+        return ApiResponse.success(c, data, "Snapshot list retrieved successfully");
+    }
+
     async internalInvoice(c: Context) {
         const { month: monthQuery, year: yearQuery } = c.req.query();
         const employeeId = c.req.param('id');

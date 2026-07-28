@@ -1,8 +1,65 @@
 import { Pool } from 'mysql2/promise';
-import { SnapshotData, ISnapshotRepository } from '../interface/snapshot.interface';
+import { SnapshotData, ISnapshotRepository, SnapshotListFilters } from '../interface/snapshot.interface';
 
 export class SnapshotRepository implements ISnapshotRepository {
     constructor(private readonly dbPool: Pool) {}
+
+    private buildSnapshotFilter(filters: SnapshotListFilters): { where: string; params: any[] } {
+        const conditions: string[] = [];
+        const params: any[] = [];
+
+        if (filters.status) {
+            conditions.push('s.status = ?');
+            params.push(filters.status);
+        }
+        if (filters.serviceType) {
+            conditions.push('s.service_type = ?');
+            params.push(filters.serviceType);
+        }
+        if (filters.search) {
+            conditions.push('(s.customer_company LIKE ? OR s.customer_id LIKE ? OR s.invoice_number LIKE ? OR s.service_name LIKE ?)');
+            const like = `%${filters.search}%`;
+            params.push(like, like, like, like);
+        }
+        if (filters.startDate && filters.endDate) {
+            conditions.push('s.paid_date BETWEEN ? AND ?');
+            params.push(filters.startDate, filters.endDate);
+        }
+
+        const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+        return { where, params };
+    }
+
+    async getSnapshots(filters: SnapshotListFilters): Promise<any[]> {
+        const { where, params } = this.buildSnapshotFilter(filters);
+        const offset = (filters.page - 1) * filters.limit;
+
+        const query = `
+            SELECT
+                s.*,
+                se.name AS sales_name,
+                se.photo_profile AS sales_photo,
+                ie.name AS implementator_name,
+                ie.photo_profile AS implementator_photo
+            FROM snapshots s
+            LEFT JOIN employees se ON s.sales_id = se.employee_id
+            LEFT JOIN employees ie ON s.implementator_id = ie.employee_id
+            ${where}
+            ORDER BY s.paid_date DESC, s.ai DESC
+            LIMIT ? OFFSET ?
+        `;
+
+        const [rows] = await this.dbPool.query(query, [...params, filters.limit, offset]);
+        return rows as any[];
+    }
+
+    async countSnapshots(filters: SnapshotListFilters): Promise<number> {
+        const { where, params } = this.buildSnapshotFilter(filters);
+        const query = `SELECT COUNT(*) AS total FROM snapshots s ${where}`;
+        const [rows] = await this.dbPool.query(query, params);
+        const data = rows as any[];
+        return data.length > 0 ? Number(data[0].total) : 0;
+    }
 
     async getInternalInvoice(salesId: string, startDate: string, endDate: string): Promise<any[]> {
         const query = `
