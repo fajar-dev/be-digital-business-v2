@@ -79,6 +79,15 @@ export class SnapshotService implements ISnapshotService {
         };
     }
 
+    async getAccountManagers(): Promise<any> {
+        const rows = await this.snapshotRepository.getAccountManagers();
+        return rows.map(row => ({
+            employeeId: row.employee_id,
+            name: row.name || '',
+            photoProfile: row.photo_profile || ''
+        }));
+    }
+
     async getImplementatorInvoiceDetail(implementatorId: string, startDate: string, endDate: string): Promise<any> {
         const snapshots = await this.snapshotRepository.getSnapshotByImplementator(implementatorId, startDate, endDate);
         const churnCount = await this.nisService.getChurnCountByImplementator(implementatorId, startDate, endDate);

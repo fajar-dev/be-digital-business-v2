@@ -26,6 +26,7 @@ export interface SnapshotListFilters {
     search?: string;
     status?: string;
     serviceType?: 'internal' | 'resell';
+    salesId?: string;
     startDate?: string;
     endDate?: string;
     page: number;
@@ -38,12 +39,14 @@ export interface ISnapshotRepository {
     getSnapshotByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<any[]>;
     getSnapshots(filters: SnapshotListFilters): Promise<any[]>;
     countSnapshots(filters: SnapshotListFilters): Promise<number>;
+    getAccountManagers(): Promise<any[]>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;
 }
 
 export interface ISnapshotService {
     getSnapshotList(filters: SnapshotListFilters): Promise<any>;
+    getAccountManagers(): Promise<any>;
     getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getResellInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getImplementatorInvoiceDetail(implementatorId: string, startDate: string, endDate: string): Promise<any>;

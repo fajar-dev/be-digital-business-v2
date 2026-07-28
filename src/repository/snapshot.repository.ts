@@ -16,6 +16,10 @@ export class SnapshotRepository implements ISnapshotRepository {
             conditions.push('s.service_type = ?');
             params.push(filters.serviceType);
         }
+        if (filters.salesId) {
+            conditions.push('s.sales_id = ?');
+            params.push(filters.salesId);
+        }
         if (filters.search) {
             conditions.push('(s.customer_company LIKE ? OR s.customer_id LIKE ? OR s.invoice_number LIKE ? OR s.service_name LIKE ?)');
             const like = `%${filters.search}%`;
@@ -50,6 +54,21 @@ export class SnapshotRepository implements ISnapshotRepository {
         `;
 
         const [rows] = await this.dbPool.query(query, [...params, filters.limit, offset]);
+        return rows as any[];
+    }
+
+    async getAccountManagers(): Promise<any[]> {
+        const query = `
+            SELECT DISTINCT
+                s.sales_id       AS employee_id,
+                e.name           AS name,
+                e.photo_profile  AS photo_profile
+            FROM snapshots s
+            INNER JOIN employees e ON s.sales_id = e.employee_id
+            WHERE s.sales_id IS NOT NULL
+            ORDER BY e.name ASC
+        `;
+        const [rows] = await this.dbPool.query(query);
         return rows as any[];
     }
 

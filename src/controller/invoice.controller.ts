@@ -9,8 +9,13 @@ export class InvoiceController {
         private readonly periodHelper: PeriodHelper = new PeriodHelper(),
     ) {}
 
+    async accountManagers(c: Context) {
+        const data = await this.snapshotService.getAccountManagers();
+        return ApiResponse.success(c, data, "Account managers retrieved successfully");
+    }
+
     async snapshotList(c: Context) {
-        const { search, status, type, month: monthQuery, year: yearQuery, page, limit } = c.req.query();
+        const { search, status, type, salesId, month: monthQuery, year: yearQuery, page, limit } = c.req.query();
 
         const pageNum = Math.max(1, Number(page) || 1);
         const limitNum = Math.min(100, Math.max(1, Number(limit) || 10));
@@ -22,6 +27,7 @@ export class InvoiceController {
             search: search || undefined,
             status: status || undefined,
             serviceType,
+            salesId: salesId || undefined,
             startDate,
             endDate,
             page: pageNum,
