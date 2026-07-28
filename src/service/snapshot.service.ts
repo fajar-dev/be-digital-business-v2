@@ -154,7 +154,11 @@ export class SnapshotService implements ISnapshotService {
                 total: Calculate.trend(current.commissionNew + current.commissionRecurring, previous.commissionNew + previous.commissionRecurring)
             },
             mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
-            subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+            subscription: {
+                new: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+                recurring: Calculate.trend(current.subscriptionRecurring, previous.subscriptionRecurring),
+                total: Calculate.trend(current.totalSubscription + current.subscriptionRecurring, previous.totalSubscription + previous.subscriptionRecurring)
+            },
             churnCount: Calculate.trend(current.churnCount, previous.churnCount),
             newAccount: Calculate.trend(current.newAccount, previous.newAccount)
         };
@@ -187,6 +191,7 @@ export class SnapshotService implements ISnapshotService {
         let commissionRecurring = 0;
         let totalMrc = 0;
         let totalSubscription = 0;
+        let subscriptionRecurring = 0;
         let newAccount = 0;
 
         for (const row of snapshots) {
@@ -200,6 +205,7 @@ export class SnapshotService implements ISnapshotService {
 
             if (status === 'recurring') {
                 commissionRecurring += implementatorCommission;
+                subscriptionRecurring += subscription;
             } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
                 commissionNew += implementatorCommission;
                 if (status !== 'termin') {
@@ -211,7 +217,7 @@ export class SnapshotService implements ISnapshotService {
             if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
-        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, churnCount, newAccount };
+        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, subscriptionRecurring, churnCount, newAccount };
     }
 
     async getSalesCommissionSummary(employeeId: string, startDate: string, endDate: string): Promise<any> {
@@ -236,7 +242,11 @@ export class SnapshotService implements ISnapshotService {
                 total: Calculate.trend(current.commissionNew + current.commissionRecurring, previous.commissionNew + previous.commissionRecurring)
             },
             mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
-            subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+            subscription: {
+                new: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+                recurring: Calculate.trend(current.subscriptionRecurring, previous.subscriptionRecurring),
+                total: Calculate.trend(current.totalSubscription + current.subscriptionRecurring, previous.totalSubscription + previous.subscriptionRecurring)
+            },
             newCustomer: Calculate.trend(current.newCustomer, previous.newCustomer),
             newAccount: Calculate.trend(current.newAccount, previous.newAccount)
         };
@@ -271,6 +281,7 @@ export class SnapshotService implements ISnapshotService {
         let commissionRecurring = 0;
         let totalMrc = 0;
         let totalSubscription = 0;
+        let subscriptionRecurring = 0;
         let newAccount = 0;
         const newCustomerIds = new Set<string>();
 
@@ -285,6 +296,7 @@ export class SnapshotService implements ISnapshotService {
 
             if (status === 'recurring') {
                 commissionRecurring += commissionAmount;
+                subscriptionRecurring += subscription;
             } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
                 commissionNew += commissionAmount;
                 if (status !== 'termin') {
@@ -308,6 +320,7 @@ export class SnapshotService implements ISnapshotService {
 
             if (status === 'recurring') {
                 commissionRecurring += commissionAmount;
+                subscriptionRecurring += subscription;
             } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
                 commissionNew += commissionAmount;
                 if (status !== 'termin') {
@@ -320,7 +333,7 @@ export class SnapshotService implements ISnapshotService {
             if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
-        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, newCustomer: newCustomerIds.size, newAccount };
+        return { commissionNew, commissionRecurring, totalMrc, totalSubscription, subscriptionRecurring, newCustomer: newCustomerIds.size, newAccount };
     }
 
     async getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any> {
@@ -496,9 +509,10 @@ export class SnapshotService implements ISnapshotService {
             commissionRecurring: acc.commissionRecurring + data.commissionRecurring,
             totalMrc: acc.totalMrc + data.totalMrc,
             totalSubscription: acc.totalSubscription + data.totalSubscription,
+            subscriptionRecurring: acc.subscriptionRecurring + data.subscriptionRecurring,
             newCustomer: acc.newCustomer + data.newCustomer,
             newAccount: acc.newAccount + data.newAccount
-        }), { commissionNew: 0, commissionRecurring: 0, totalMrc: 0, totalSubscription: 0, newCustomer: 0, newAccount: 0 });
+        }), { commissionNew: 0, commissionRecurring: 0, totalMrc: 0, totalSubscription: 0, subscriptionRecurring: 0, newCustomer: 0, newAccount: 0 });
 
         const current = sumData(currentResults);
         const previous = sumData(previousResults);
@@ -514,7 +528,11 @@ export class SnapshotService implements ISnapshotService {
                 total: Calculate.trend(currentTotal, previousTotal)
             },
             mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
-            subscription: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+            subscription: {
+                new: Calculate.trend(current.totalSubscription, previous.totalSubscription),
+                recurring: Calculate.trend(current.subscriptionRecurring, previous.subscriptionRecurring),
+                total: Calculate.trend(current.totalSubscription + current.subscriptionRecurring, previous.totalSubscription + previous.subscriptionRecurring)
+            },
             newCustomer: Calculate.trend(current.newCustomer, previous.newCustomer),
             newAccount: Calculate.trend(current.newAccount, previous.newAccount)
         };
