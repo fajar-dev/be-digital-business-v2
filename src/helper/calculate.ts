@@ -11,13 +11,19 @@ export class Calculate {
 
     /**
      * MRC khusus untuk resell status 'upgrade'.
-     * Dibagi bulan bulat (floor), minimal 1 (jika periode < 1 bulan, MRC = subscription penuh).
-     * Contoh: 25 hari (< 1 bulan) → subscription/1; 40 hari (1.x bulan) → subscription/1;
-     * 65 hari (2.x bulan) → subscription/2.
+     * - monthPeriod dipotong (truncate, BUKAN dibulatkan) ke 2 angka desimal dulu
+     *   (mis. 6.939993 → 6.93), supaya konsisten dengan angka periode yang ditampilkan
+     *   di tempat lain pada aplikasi (kolom Month Period juga pakai trunc, bukan round).
+     * - periode < 1 bulan: MRC = subscription penuh (tidak dibagi)
+     * - periode >= 1 bulan: MRC = subscription / periode (2 desimal), hasil akhir dipotong
+     *   ke 2 desimal juga (bukan dibulatkan, bukan ke bilangan bulat).
+     * Contoh: subscription 1.632.800, periode 6.93 → 1.632.800 / 6.93 = 235.613,27.
      */
     static resellUpgradeMrc(subscription: number, monthPeriod: number): number {
-        const months = Math.max(1, Math.floor(monthPeriod));
-        return subscription / months;
+        const period = Math.trunc(monthPeriod * 100) / 100;
+        if (period < 1) return subscription;
+        const mrc = subscription / period;
+        return Math.trunc(mrc * 100) / 100;
     }
 
     /**
