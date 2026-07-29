@@ -309,9 +309,9 @@ export class SnapshotService implements ISnapshotService {
             if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
+        const newResellServiceIds = this.collectNewResellServiceIds(resellSnapshots);
         for (const row of resellSnapshots) {
             const subscription = Number(row.subscription) || 0;
-            const monthPeriod = Number(row.month_period) || 1;
             const status = row.status;
 
             const { commissionAmount } = Calculate.resellSalesCommission(
@@ -323,9 +323,8 @@ export class SnapshotService implements ISnapshotService {
                 subscriptionRecurring += subscription;
             } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
                 commissionNew += commissionAmount;
-                if (status !== 'termin') {
-                    totalMrc += Calculate.mrc(subscription, monthPeriod);
-                }
+                // MRC 0 utk upgrade/prorate resell jika ada 'new' dgn customer_service_id sama di periode ini
+                totalMrc += this.resellMrc(row, newResellServiceIds);
                 totalSubscription += subscription;
             }
 
@@ -379,8 +378,41 @@ export class SnapshotService implements ISnapshotService {
         });
     }
 
+    /**
+     * Kumpulkan customer_service_id yang punya invoice 'new' (resell) dalam satu set baris/periode.
+     */
+    private collectNewResellServiceIds(rows: any[]): Set<any> {
+        const ids = new Set<any>();
+        for (const row of rows) {
+            if (row.status === 'new' && row.customer_service_id != null) {
+                ids.add(row.customer_service_id);
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * MRC untuk baris resell.
+     * - recurring / termin: selalu 0
+     * - upgrade / prorate: 0 jika customer_service_id-nya juga punya invoice 'new' di periode yang sama
+     *   (hindari dobel hitung; new-nya sudah membawa MRC). Jika new-nya tidak ada di periode ini
+     *   (mis. new di periode sebelumnya), upgrade/prorate tetap punya MRC.
+     * - new: MRC normal
+     */
+    private resellMrc(row: any, newResellServiceIds: Set<any>): number {
+        const status = row.status;
+        if (['recurring', 'termin'].includes(status)) return 0;
+        if (['upgrade', 'prorate'].includes(status) && newResellServiceIds.has(row.customer_service_id)) {
+            return 0;
+        }
+        const subscription = Number(row.subscription) || 0;
+        const monthPeriod = Number(row.month_period) || 1;
+        return Calculate.mrc(subscription, monthPeriod);
+    }
+
     async getResellInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any> {
         const snapshots = await this.snapshotRepository.getResellInvoice(employeeId, startDate, endDate);
+        const newResellServiceIds = this.collectNewResellServiceIds(snapshots);
 
         return snapshots.map(row => {
             const subscription = Number(row.subscription) || 0;
@@ -412,7 +444,7 @@ export class SnapshotService implements ISnapshotService {
                 price,
                 markup,
                 margin,
-                mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
+                mrc: this.resellMrc(row, newResellServiceIds),
                 commissionPercentage,
                 commission: commissionAmount,
                 isAdjust: Boolean(row.is_adjust)
