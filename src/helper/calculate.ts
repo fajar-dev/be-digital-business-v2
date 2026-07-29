@@ -10,6 +10,17 @@ export class Calculate {
     }
 
     /**
+     * MRC khusus untuk resell status 'upgrade'.
+     * Dibagi bulan bulat (floor), minimal 1 (jika periode < 1 bulan, MRC = subscription penuh).
+     * Contoh: 25 hari (< 1 bulan) → subscription/1; 40 hari (1.x bulan) → subscription/1;
+     * 65 hari (2.x bulan) → subscription/2.
+     */
+    static resellUpgradeMrc(subscription: number, monthPeriod: number): number {
+        const months = Math.max(1, Math.floor(monthPeriod));
+        return subscription / months;
+    }
+
+    /**
      * Konversi monthPeriod desimal ke format human-readable
      * Contoh: 7.322581 → "7 Months 10 Days", 14.0 → "1 Year 2 Months", 22.1 → "1 Year 10 Months 3 Days"
      */

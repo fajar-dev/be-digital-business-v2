@@ -397,7 +397,8 @@ export class SnapshotService implements ISnapshotService {
      * - upgrade / prorate: 0 jika customer_service_id-nya juga punya invoice 'new' di periode yang sama
      *   (hindari dobel hitung; new-nya sudah membawa MRC). Jika new-nya tidak ada di periode ini
      *   (mis. new di periode sebelumnya), upgrade/prorate tetap punya MRC.
-     * - new: MRC normal
+     * - upgrade (jika tidak di-nol-kan di atas): MRC dibagi bulan bulat (lihat Calculate.resellUpgradeMrc)
+     * - new / prorate: MRC normal (subscription / monthPeriod)
      */
     private resellMrc(row: any, newResellServiceIds: Set<any>): number {
         const status = row.status;
@@ -407,6 +408,9 @@ export class SnapshotService implements ISnapshotService {
         }
         const subscription = Number(row.subscription) || 0;
         const monthPeriod = Number(row.month_period) || 1;
+        if (status === 'upgrade') {
+            return Calculate.resellUpgradeMrc(subscription, monthPeriod);
+        }
         return Calculate.mrc(subscription, monthPeriod);
     }
 
