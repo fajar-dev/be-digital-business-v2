@@ -489,17 +489,35 @@ export class SnapshotService implements ISnapshotService {
         return results;
     }
 
-    async getManagerTeamYearlySummary(employees: { employeeId: string; name: string; photoProfile: string }[], year: number): Promise<any> {
-        const results = await Promise.all(
-            employees.map(async (emp) => {
-                const periodHelper = new PeriodHelper();
-                const promises = [];
-                for (let month = 1; month <= 12; month++) {
-                    const { startDate, endDate } = periodHelper.getStartAndEndDateForMonth(year, month);
-                    promises.push(this.aggregateSalesCommission(emp.employeeId, startDate, endDate));
-                }
+    async getManagerTeamYearlySummary(employeesByMonth: { employeeId: string; name: string; photoProfile: string }[][], year: number): Promise<any> {
+        // Roster = union semua staff yang pernah jadi anak buah manager ini sepanjang tahun,
+        // supaya staff yang pindah masuk/keluar di tengah tahun tetap muncul di daftar.
+        const rosterMap = new Map<string, { employeeId: string; name: string; photoProfile: string }>();
+        for (const monthList of employeesByMonth) {
+            for (const emp of monthList) {
+                rosterMap.set(emp.employeeId, emp);
+            }
+        }
+        const roster = Array.from(rosterMap.values());
 
-                const monthlyData = await Promise.all(promises);
+        const zeroData = { commissionNew: 0, commissionRecurring: 0, totalMrc: 0, totalSubscription: 0, newCustomer: 0, newAccount: 0 };
+
+        const results = await Promise.all(
+            roster.map(async (emp) => {
+                const periodHelper = new PeriodHelper();
+
+                const monthlyData = await Promise.all(
+                    employeesByMonth.map(async (monthList, idx) => {
+                        // Bulan di mana staff ini bukan anak buah manager (belum/sudah pindah) -> nol,
+                        // bukan ikut dihitung ke manager ini.
+                        const isMember = monthList.some(m => m.employeeId === emp.employeeId);
+                        if (!isMember) return zeroData;
+
+                        const month = idx + 1;
+                        const { startDate, endDate } = periodHelper.getStartAndEndDateForMonth(year, month);
+                        return this.aggregateSalesCommission(emp.employeeId, startDate, endDate);
+                    })
+                );
 
                 return {
                     employeeId: emp.employeeId,
@@ -574,11 +592,12 @@ export class SnapshotService implements ISnapshotService {
         };
     }
 
-    async getManagerCommissionYearlySummary(employeeIds: string[], year: number): Promise<any[]> {
+    async getManagerCommissionYearlySummary(employeeIdsByMonth: string[][], year: number): Promise<any[]> {
         const periodHelper = new PeriodHelper();
         const promises = [];
         for (let month = 1; month <= 12; month++) {
             const { startDate, endDate } = periodHelper.getStartAndEndDateForMonth(year, month);
+            const employeeIds = employeeIdsByMonth[month - 1] || [];
 
             promises.push(
                 Promise.all(employeeIds.map(id => this.aggregateSalesCommission(id, startDate, endDate)))

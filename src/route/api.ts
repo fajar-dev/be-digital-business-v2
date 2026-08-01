@@ -47,6 +47,7 @@ api.post('/auth/logout', authMiddleware, (c) => authController.logout(c));
 // Protected Employee Routes
 api.get('/employee/:id', authMiddleware, (c) => employeeController.getEmployeeByEmployeeId(c));
 api.get('/employee/:id/hierarchy', authMiddleware, (c) => employeeController.getEmployeeHierarchy(c));
+api.post('/employee/manager-mapping', authMiddleware, (c) => employeeController.setManagerMapping(c));
 
 // Protected Invoice Routes
 api.get('/invoice/snapshot', (c) => invoiceController.snapshotList(c));

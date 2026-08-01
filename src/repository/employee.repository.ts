@@ -71,6 +71,30 @@ export class EmployeeRepository implements IEmployeeRepository {
         return rows;
     }
 
+    async getStaffForPeriod(managerId: string, year: number, month: number): Promise<any[]> {
+        // Tidak fallback ke employees.manager_id (live). Kalau periode ini belum
+        // di-mapping untuk manager tsb, staff-nya dianggap kosong (0), bukan diam-diam
+        // mengambil state manager saat ini yang bisa saja sudah berubah.
+        const query = `
+            SELECT e.*
+            FROM employee_manager_snapshots ms
+            INNER JOIN employees e ON e.id = ms.employee_id
+            WHERE ms.manager_id = ? AND ms.year = ? AND ms.month = ?
+        `;
+        const [rows] = await this.dbPool.query<RowDataPacket[]>(query, [managerId, year, month]);
+        return rows;
+    }
+
+    async upsertManagerMapping(employeeId: number, managerId: number, year: number, month: number): Promise<any> {
+        const query = `
+            INSERT INTO employee_manager_snapshots (employee_id, manager_id, year, month)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE manager_id = VALUES(manager_id)
+        `;
+        const [result] = await this.dbPool.query(query, [employeeId, managerId, year, month]);
+        return result;
+    }
+
     async getEmployeeByEmployeeId(employeeId: string): Promise<any | null> {
         const query = `
             SELECT 
@@ -101,6 +125,12 @@ export class EmployeeRepository implements IEmployeeRepository {
 
     async getAllDashboardEmployees(): Promise<any[]> {
         const query = `SELECT * FROM employees WHERE has_dashboard = true`;
+        const [rows]: any[] = await this.dbPool.query(query);
+        return Array.isArray(rows) ? rows : [];
+    }
+
+    async getAllEmployees(): Promise<any[]> {
+        const query = `SELECT * FROM employees`;
         const [rows]: any[] = await this.dbPool.query(query);
         return Array.isArray(rows) ? rows : [];
     }

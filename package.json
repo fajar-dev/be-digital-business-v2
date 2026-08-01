@@ -5,6 +5,7 @@
     "sync:employee": "bun run src/job/employee.job.ts",
     "sync:internal-invoice": "bun run src/job/internal-invoice.job.ts",
     "sync:resell-invoice": "bun run src/job/resell-invoice.job.ts",
+    "sync:manager-mapping": "bun run src/job/manager-mapping.job.ts",
     "build": "bun build --minify --outfile dist/index.js --target bun src/index.ts"
   },
   "dependencies": {

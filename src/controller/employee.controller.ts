@@ -31,4 +31,29 @@ export class EmployeeController {
 
         return ApiResponse.success(c, hierarchy, "Employee hierarchy retrieved successfully");
     }
+
+    async setManagerMapping(c: Context) {
+        const body = await c.req.json();
+        const rawMappings = Array.isArray(body?.mappings) ? body.mappings : [body];
+
+        if (!rawMappings.length) {
+            throw new BadRequestException('At least one mapping is required');
+        }
+
+        const mappings = rawMappings.map((m: any) => {
+            if (!m?.employeeId || !m?.managerId || !m?.year || !m?.month) {
+                throw new BadRequestException('employeeId, managerId, year, and month are required for each mapping');
+            }
+            return {
+                employeeId: String(m.employeeId),
+                managerId: String(m.managerId),
+                year: Number(m.year),
+                month: Number(m.month)
+            };
+        });
+
+        await this.employeeService.setManagerMapping(mappings);
+
+        return ApiResponse.success(c, null, "Manager mapping updated successfully");
+    }
 }

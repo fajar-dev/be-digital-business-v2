@@ -39,3 +39,16 @@ CREATE TABLE snapshots (
 
 -- Migration untuk database yang sudah ada:
 -- ALTER TABLE snapshots ADD COLUMN is_adjust BOOLEAN NOT NULL DEFAULT false;
+
+-- Mapping manager -> staff per periode (year, month).
+-- employee_id & manager_id merujuk ke employees.id (internal numeric id).
+-- Query staff-per-manager per periode akan fallback ke employees.manager_id (live)
+-- untuk periode yang belum punya baris di tabel ini sama sekali.
+CREATE TABLE employee_manager_snapshots (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    employee_id INT NOT NULL,
+    manager_id INT NOT NULL,
+    year INT NOT NULL,
+    month INT NOT NULL,
+    UNIQUE KEY uq_employee_manager_period (employee_id, year, month)
+);

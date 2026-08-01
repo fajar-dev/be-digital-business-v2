@@ -85,14 +85,14 @@ export class CommissionController {
             return ApiResponse.error(c, "manager not found", 404);
         }
 
-        const staff = await this.employeeService.getStaff(manager[0].id);
+        const period = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
+        const staff = await this.employeeService.getStaffForPeriod(manager[0].id, period.year, period.month);
         const employees = staff.map((s: any) => ({
             employeeId: s.employee_id,
             name: s.name,
             photoProfile: s.photo_profile || ''
         }));
 
-        const period = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
         const data = await this.snapshotService.getManagerTeamSummary(employees, period.startDate, period.endDate);
         return ApiResponse.success(c, data, "manager team commission retrieved successfully");
     }
@@ -115,14 +115,18 @@ export class CommissionController {
             return ApiResponse.error(c, "invalid year parameter", 400);
         }
 
-        const staff = await this.employeeService.getStaff(manager[0].id);
-        const employees = staff.map((s: any) => ({
-            employeeId: s.employee_id,
-            name: s.name,
-            photoProfile: s.photo_profile || ''
-        }));
+        const employeesByMonth = await Promise.all(
+            Array.from({ length: 12 }, async (_, idx) => {
+                const staff = await this.employeeService.getStaffForPeriod(manager[0].id, year, idx + 1);
+                return staff.map((s: any) => ({
+                    employeeId: s.employee_id,
+                    name: s.name,
+                    photoProfile: s.photo_profile || ''
+                }));
+            })
+        );
 
-        const data = await this.snapshotService.getManagerTeamYearlySummary(employees, year);
+        const data = await this.snapshotService.getManagerTeamYearlySummary(employeesByMonth, year);
         return ApiResponse.success(c, data, "manager team yearly retrieved successfully");
     }
 
@@ -139,10 +143,10 @@ export class CommissionController {
             return ApiResponse.error(c, "manager not found", 404);
         }
 
-        const staff = await this.employeeService.getStaff(manager[0].id);
+        const period = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
+        const staff = await this.employeeService.getStaffForPeriod(manager[0].id, period.year, period.month);
         const employeeIds = staff.map((s: any) => s.employee_id);
 
-        const period = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
         const data = await this.snapshotService.getManagerCommissionSummary(employeeIds, period.startDate, period.endDate);
         return ApiResponse.success(c, data, "manager commission retrieved successfully");
     }
@@ -165,10 +169,14 @@ export class CommissionController {
             return ApiResponse.error(c, "invalid year parameter", 400);
         }
 
-        const staff = await this.employeeService.getStaff(manager[0].id);
-        const employeeIds = staff.map((s: any) => s.employee_id);
+        const employeeIdsByMonth = await Promise.all(
+            Array.from({ length: 12 }, async (_, idx) => {
+                const staff = await this.employeeService.getStaffForPeriod(manager[0].id, year, idx + 1);
+                return staff.map((s: any) => s.employee_id);
+            })
+        );
 
-        const data = await this.snapshotService.getManagerCommissionYearlySummary(employeeIds, year);
+        const data = await this.snapshotService.getManagerCommissionYearlySummary(employeeIdsByMonth, year);
         return ApiResponse.success(c, data, "manager commission yearly retrieved successfully");
     }
 }
