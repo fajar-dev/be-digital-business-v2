@@ -59,7 +59,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.implementator_photo || ''
                 },
                 subscription,
-                mrc: ['recurring', 'termin'].includes(status) ? 0 : Calculate.mrc(subscription, monthPeriod),
+                mrc: ['recurring', 'termin', 'setup'].includes(status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage,
                 commission: commissionAmount,
                 isAdjust: Boolean(row.is_adjust)
@@ -124,7 +124,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.sales_photo || ''
                 },
                 subscription,
-                mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
+                mrc: ['recurring', 'termin', 'setup'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage: implementatorCommissionPercentage,
                 commission: implementatorCommission,
                 isAdjust: Boolean(row.is_adjust)
@@ -206,15 +206,18 @@ export class SnapshotService implements ISnapshotService {
             if (status === 'recurring') {
                 commissionRecurring += implementatorCommission;
                 subscriptionRecurring += subscription;
-            } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
+            } else if (['new', 'prorate', 'upgrade', 'termin', 'add'].includes(status)) {
                 commissionNew += implementatorCommission;
                 if (status !== 'termin') {
                     totalMrc += Calculate.mrc(subscription, monthPeriod);
                 }
                 totalSubscription += subscription;
+            } else if (status === 'setup') {
+                // Setup: fee satu kali, hanya masuk Total Commission (bukan MRC/Subscription/New Account)
+                commissionNew += implementatorCommission;
             }
 
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
+            if (['new', 'upgrade', 'prorate', 'termin', 'add'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
         return { commissionNew, commissionRecurring, totalMrc, totalSubscription, subscriptionRecurring, churnCount, newAccount };
@@ -297,7 +300,7 @@ export class SnapshotService implements ISnapshotService {
             if (status === 'recurring') {
                 commissionRecurring += commissionAmount;
                 subscriptionRecurring += subscription;
-            } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
+            } else if (['new', 'prorate', 'upgrade', 'termin', 'add'].includes(status)) {
                 commissionNew += commissionAmount;
                 if (status !== 'termin') {
                     totalMrc += Calculate.mrc(subscription, monthPeriod);
@@ -306,7 +309,7 @@ export class SnapshotService implements ISnapshotService {
             }
 
             if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
+            if (['new', 'upgrade', 'prorate', 'termin', 'add'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
         const newResellServiceIds = this.collectNewResellServiceIds(resellSnapshots);
@@ -321,15 +324,15 @@ export class SnapshotService implements ISnapshotService {
             if (status === 'recurring') {
                 commissionRecurring += commissionAmount;
                 subscriptionRecurring += subscription;
-            } else if (['new', 'prorate', 'upgrade', 'termin'].includes(status)) {
+            } else if (['new', 'prorate', 'upgrade', 'termin', 'add'].includes(status)) {
                 commissionNew += commissionAmount;
-                // MRC 0 utk upgrade/prorate resell jika ada 'new' dgn customer_service_id sama di periode ini
-                totalMrc += this.resellMrc(row, newResellServiceIds);
+                // MRC 0 utk prorate (dan upgrade sebelum periode aturan baru) resell jika ada 'new' dgn customer_service_id sama di periode ini
+                totalMrc += this.resellMrc(row, newResellServiceIds, startDate);
                 totalSubscription += subscription;
             }
 
             if (status === 'new' && row.customer_id) newCustomerIds.add(row.customer_id);
-            if (['new', 'upgrade', 'prorate', 'termin'].includes(status)) newAccount += Number(row.total_account) || 0;
+            if (['new', 'upgrade', 'prorate', 'termin', 'add'].includes(status)) newAccount += Number(row.total_account) || 0;
         }
 
         return { commissionNew, commissionRecurring, totalMrc, totalSubscription, subscriptionRecurring, newCustomer: newCustomerIds.size, newAccount };
@@ -394,18 +397,26 @@ export class SnapshotService implements ISnapshotService {
     /**
      * MRC untuk baris resell.
      * - recurring / termin: selalu 0
-     * - upgrade / prorate: 0 jika customer_service_id-nya juga punya invoice 'new' di periode yang sama
-     *   (hindari dobel hitung; new-nya sudah membawa MRC). Jika new-nya tidak ada di periode ini
-     *   (mis. new di periode sebelumnya), upgrade/prorate tetap punya MRC.
-     * - upgrade (jika tidak di-nol-kan di atas): MRC dibagi bulan bulat (lihat Calculate.resellUpgradeMrc)
+     * - prorate: 0 jika customer_service_id-nya juga punya invoice 'new' di periode yang sama
+     *   (hindari dobel hitung; new-nya sudah membawa MRC).
+     * - upgrade: SEBELUM periode aturan baru (< 26 Juli 2026), berlaku aturan yang sama seperti
+     *   prorate di atas (bisa 0 kalau ada 'new' di periode sama). MULAI periode aturan baru,
+     *   upgrade SELALU dihitung MRC-nya, tidak pernah di-nol-kan oleh aturan dedup ini lagi.
+     * - upgrade (jika tidak di-nol-kan): MRC dibagi bulan bulat (lihat Calculate.resellUpgradeMrc)
      * - new / prorate: MRC normal (subscription / monthPeriod)
      */
-    private resellMrc(row: any, newResellServiceIds: Set<any>): number {
+    private resellMrc(row: any, newResellServiceIds: Set<any>, startDate: string): number {
         const status = row.status;
         if (['recurring', 'termin'].includes(status)) return 0;
-        if (['upgrade', 'prorate'].includes(status) && newResellServiceIds.has(row.customer_service_id)) {
+
+        const isDuplicateWithNew = newResellServiceIds.has(row.customer_service_id);
+        if (status === 'prorate' && isDuplicateWithNew) {
             return 0;
         }
+        if (status === 'upgrade' && isDuplicateWithNew && !Calculate.isNewRulePeriod(startDate)) {
+            return 0;
+        }
+
         const subscription = Number(row.subscription) || 0;
         const monthPeriod = Number(row.month_period) || 1;
         if (status === 'upgrade') {
@@ -448,7 +459,7 @@ export class SnapshotService implements ISnapshotService {
                 price,
                 markup,
                 margin,
-                mrc: this.resellMrc(row, newResellServiceIds),
+                mrc: this.resellMrc(row, newResellServiceIds, startDate),
                 commissionPercentage,
                 commission: commissionAmount,
                 isAdjust: Boolean(row.is_adjust)

@@ -4,7 +4,7 @@ export interface SnapshotData {
     sequence_number: number | null;
     paid_date: Date | string | null;
     subscription: number | null;
-    status: 'new' | 'upgrade' | 'termin' | 'recurring' | 'prorate';
+    status: 'new' | 'upgrade' | 'termin' | 'recurring' | 'prorate' | 'add' | 'setup';
     month_period: number | null;
     total_account: number | null;
     customer_id: string | null;

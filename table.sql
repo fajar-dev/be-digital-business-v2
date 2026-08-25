@@ -18,7 +18,7 @@ CREATE TABLE snapshots (
     sequence_number INT NULL,
     paid_date DATE NULL,
     subscription DECIMAL(15, 2) NULL,
-    status ENUM('new', 'upgrade', 'termin', 'recurring', 'prorate') NOT NULL DEFAULT 'recurring',
+    status ENUM('new', 'upgrade', 'termin', 'recurring', 'prorate', 'add', 'setup') NOT NULL DEFAULT 'recurring',
     month_period DECIMAL(15, 6) NULL,
     total_account INT NULL,
     customer_id VARCHAR(20) NULL,
@@ -39,6 +39,7 @@ CREATE TABLE snapshots (
 
 -- Migration untuk database yang sudah ada:
 -- ALTER TABLE snapshots ADD COLUMN is_adjust BOOLEAN NOT NULL DEFAULT false;
+-- ALTER TABLE snapshots MODIFY COLUMN status ENUM('new', 'upgrade', 'termin', 'recurring', 'prorate', 'add', 'setup') NOT NULL DEFAULT 'recurring';
 
 -- Mapping manager -> staff per periode (year, month).
 -- employee_id & manager_id merujuk ke employees.id (internal numeric id).

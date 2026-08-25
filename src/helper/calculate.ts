@@ -1,7 +1,20 @@
-export type SnapshotStatus = 'new' | 'upgrade' | 'termin' | 'recurring' | 'prorate';
+export type SnapshotStatus = 'new' | 'upgrade' | 'termin' | 'recurring' | 'prorate' | 'add' | 'setup';
 export type SnapshotType = 'internal' | 'resell';
 
+/**
+ * Tanggal mulai berlakunya aturan komisi baru (periode Agustus 2026, cut-off 26-25).
+ * Baris dengan periode SEBELUM tanggal ini tetap pakai aturan lama supaya histori tidak berubah.
+ */
+export const NEW_RULE_CUTOFF_DATE = '2026-07-26';
+
 export class Calculate {
+    /**
+     * Apakah startDate suatu periode sudah masuk aturan baru (>= 26 Juli 2026).
+     */
+    static isNewRulePeriod(startDate: string): boolean {
+        return startDate >= NEW_RULE_CUTOFF_DATE;
+    }
+
     /**
      * MRC = subscription / monthPeriod
      */
@@ -61,12 +74,14 @@ export class Calculate {
         let commissionPercentage = 0;
         let commissionAmount = 0;
 
-        if (status === 'upgrade' || status === 'prorate') {
+        if (status === 'upgrade' || status === 'prorate' || status === 'add') {
             commissionPercentage = 20;
         } else if (status === 'new' || status === 'termin') {
             commissionPercentage = crossSellCount > 0 ? 15 : 12;
         } else if (status === 'recurring') {
             commissionPercentage = 1;
+        } else if (status === 'setup') {
+            commissionPercentage = 0;
         } else {
             commissionPercentage = 1;
         }
@@ -116,7 +131,9 @@ export class Calculate {
 
         let commissionPercentage = 0;
 
-        if (status === 'recurring') {
+        if (status === 'setup') {
+            commissionPercentage = 0;
+        } else if (status === 'recurring') {
             commissionPercentage = 0.5;
         } else if (isNewUpgradeProrate || status === 'termin') {
             if ((margin ?? 0) >= 15) {
@@ -127,6 +144,7 @@ export class Calculate {
                 commissionPercentage = 2.5;
             }
         } else {
+            // termasuk status 'add' -> flat 2.5%
             commissionPercentage = 2.5;
         }
 
@@ -149,17 +167,21 @@ export class Calculate {
         dpp: number,
         churnCount: number,
         monthPeriod: number
-    ): { implementatorCommission: number; implementatorCommissionPercentage: number; type: 'base' | 'retention' | 'recurring' } {
+    ): { implementatorCommission: number; implementatorCommissionPercentage: number; type: 'base' | 'retention' | 'recurring' | 'setup' } {
         let proratedDpp = dpp;
 
-        if (status === 'new' || status === 'upgrade' || status === 'prorate' || status === 'termin') {
+        if (status === 'new' || status === 'upgrade' || status === 'prorate' || status === 'termin' || status === 'add') {
             proratedDpp = dpp / (monthPeriod || 1);
         }
 
         let percentage = 0;
-        let type: 'base' | 'retention' | 'recurring' = 'retention';
+        let type: 'base' | 'retention' | 'recurring' | 'setup' = 'retention';
 
-        if (status === 'recurring') {
+        if (status === 'setup') {
+            // Setup: fee satu kali, flat 50% dari dpp (tidak diprorata).
+            percentage = 50;
+            type = 'setup';
+        } else if (status === 'recurring') {
             percentage = 1;
             type = 'recurring';
         } else if (churnCount > 0) {

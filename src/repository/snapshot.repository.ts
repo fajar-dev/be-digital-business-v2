@@ -88,9 +88,10 @@ export class SnapshotRepository implements ISnapshotRepository {
                 e.photo_profile AS implementator_photo_profile
             FROM snapshots s
             LEFT JOIN employees e ON s.implementator_id = e.employee_id
-            WHERE s.sales_id = ? 
+            WHERE s.sales_id = ?
               AND s.paid_date BETWEEN ? AND ?
               AND s.service_type = 'internal'
+              AND s.status != 'setup'
         `;
         const [rows] = await this.dbPool.query(query, [salesId, startDate, endDate]);
         return rows as any[];
@@ -119,9 +120,10 @@ export class SnapshotRepository implements ISnapshotRepository {
         const query = `
             SELECT s.*
             FROM snapshots s
-            WHERE s.sales_id = ? 
+            WHERE s.sales_id = ?
               AND s.paid_date BETWEEN ? AND ?
               AND s.service_type = 'resell'
+              AND s.status != 'setup'
         `;
         const [rows] = await this.dbPool.query(query, [salesId, startDate, endDate]);
         return rows as any[];
