@@ -57,6 +57,19 @@ export class SnapshotRepository implements ISnapshotRepository {
         return rows as any[];
     }
 
+    async getResellNewServiceIdsInRange(startDate: string, endDate: string): Promise<any[]> {
+        const query = `
+            SELECT DISTINCT customer_service_id
+            FROM snapshots
+            WHERE service_type = 'resell'
+              AND status = 'new'
+              AND customer_service_id IS NOT NULL
+              AND paid_date BETWEEN ? AND ?
+        `;
+        const [rows] = await this.dbPool.query(query, [startDate, endDate]);
+        return rows as any[];
+    }
+
     async getAccountManagers(): Promise<any[]> {
         const query = `
             SELECT DISTINCT

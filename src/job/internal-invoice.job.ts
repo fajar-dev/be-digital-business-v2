@@ -66,6 +66,8 @@ async function syncInternalInvoices() {
                 let status = 'recurring';
                 if (row.service_group_id === 'NW' && /\btermin\b(?!\w)/i.test(row.description || '')) {
                     status = 'termin';
+                } else if (row.service_group_id === 'NW' && /\bsetup\b(?!\w)/i.test(row.description || '')) {
+                    status = 'setup';
                 } else if (row.new_subscription > 0 && row.is_upgrade === 0 && row.is_prorate === 0) {
                     status = 'new';
                 } else if (row.is_upgrade === 1 && row.is_prorate === 0) {

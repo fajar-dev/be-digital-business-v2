@@ -39,6 +39,7 @@ export interface ISnapshotRepository {
     getSnapshotByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<any[]>;
     getSnapshots(filters: SnapshotListFilters): Promise<any[]>;
     countSnapshots(filters: SnapshotListFilters): Promise<number>;
+    getResellNewServiceIdsInRange(startDate: string, endDate: string): Promise<any[]>;
     getAccountManagers(): Promise<any[]>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;

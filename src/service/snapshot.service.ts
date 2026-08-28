@@ -10,10 +10,17 @@ export class SnapshotService implements ISnapshotService {
     ) {}
 
     async getSnapshotList(filters: SnapshotListFilters): Promise<any> {
-        const [rows, total] = await Promise.all([
+        const [rows, total, newResellServiceIdRows] = await Promise.all([
             this.snapshotRepository.getSnapshots(filters),
-            this.snapshotRepository.countSnapshots(filters)
+            this.snapshotRepository.countSnapshots(filters),
+            // Diambil terpisah (bukan dari `rows` yang sudah di-paginate) supaya deteksi dedup
+            // 'new' vs 'upgrade'/'prorate' tetap benar walau baris 'new'-nya ada di halaman lain.
+            (filters.startDate && filters.endDate)
+                ? this.snapshotRepository.getResellNewServiceIdsInRange(filters.startDate, filters.endDate)
+                : Promise.resolve([])
         ]);
+
+        const newResellServiceIds = new Set(newResellServiceIdRows.map((r: any) => r.customer_service_id));
 
         const items = rows.map(row => {
             const subscription = Number(row.subscription) || 0;
@@ -22,14 +29,17 @@ export class SnapshotService implements ISnapshotService {
 
             let commissionAmount = 0;
             let commissionPercentage = 0;
+            let mrc = 0;
             if (row.service_type === 'resell') {
                 const res = Calculate.resellSalesCommission(status, subscription, Number(row.total_account) || 1, Number(row.modal) || 0);
                 commissionAmount = res.commissionAmount;
                 commissionPercentage = res.commissionPercentage;
+                mrc = this.resellMrc(row, newResellServiceIds, filters.startDate || '');
             } else {
                 const res = Calculate.internalSalesCommission(status, subscription, row.cross_sell_count, monthPeriod);
                 commissionAmount = res.commissionAmount;
                 commissionPercentage = res.commissionPercentage;
+                mrc = ['recurring', 'termin', 'setup'].includes(status) ? 0 : Calculate.mrc(subscription, monthPeriod);
             }
 
             return {
@@ -59,7 +69,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.implementator_photo || ''
                 },
                 subscription,
-                mrc: ['recurring', 'termin', 'setup'].includes(status) ? 0 : Calculate.mrc(subscription, monthPeriod),
+                mrc,
                 commissionPercentage,
                 commission: commissionAmount,
                 isAdjust: Boolean(row.is_adjust)
@@ -407,7 +417,7 @@ export class SnapshotService implements ISnapshotService {
      */
     private resellMrc(row: any, newResellServiceIds: Set<any>, startDate: string): number {
         const status = row.status;
-        if (['recurring', 'termin'].includes(status)) return 0;
+        if (['recurring', 'termin', 'setup'].includes(status)) return 0;
 
         const isDuplicateWithNew = newResellServiceIds.has(row.customer_service_id);
         if (status === 'prorate' && isDuplicateWithNew) {
