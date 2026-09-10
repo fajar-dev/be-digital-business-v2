@@ -78,6 +78,8 @@ async function syncInternalInvoices() {
                     status = (!isUnderContract && row.service_group_id === 'NW') ? 'termin' : 'recurring';
                 } else if (!isUnderContract && activationMonthDiff > 0) {
                     status = 'recurring';
+                } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0 && row.is_add_account === 1) {
+                    status = 'add';
                 } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0) {
                     status = 'recurring';
                 }
