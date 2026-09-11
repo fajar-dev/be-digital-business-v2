@@ -64,7 +64,9 @@ async function syncInternalInvoices() {
                 }
 
                 let status = 'recurring';
-                if (row.service_group_id === 'NW' && /\btermin\b(?!\w)/i.test(row.description || '')) {
+                if (row.is_add_account === 1) {
+                    status = 'add';
+                } else if (row.service_group_id === 'NW' && /\btermin\b(?!\w)/i.test(row.description || '')) {
                     status = 'termin';
                 } else if (row.service_group_id === 'NW' && /\bsetup\b(?!\w)/i.test(row.description || '')) {
                     status = 'setup';
@@ -78,8 +80,6 @@ async function syncInternalInvoices() {
                     status = (!isUnderContract && row.service_group_id === 'NW') ? 'termin' : 'recurring';
                 } else if (!isUnderContract && activationMonthDiff > 0) {
                     status = 'recurring';
-                } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0 && row.is_add_account === 1) {
-                    status = 'add';
                 } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0) {
                     status = 'recurring';
                 }

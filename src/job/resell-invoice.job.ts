@@ -34,14 +34,14 @@ async function syncResellInvoices() {
         for (const row of rows) {
             try {
                 let status = 'recurring';
-                if (row.new_subscription > 0 && row.is_upgrade === 0 && row.is_prorate === 0) {
+                if (row.is_add_account === 1) {
+                    status = 'add';
+                } else if (row.new_subscription > 0 && row.is_upgrade === 0 && row.is_prorate === 0) {
                     status = 'new';
                 } else if (row.is_upgrade === 1 && row.is_prorate === 0) {
                     status = 'upgrade';
                 } else if (row.is_prorate === 1 && row.is_upgrade === 0) {
                     status = 'prorate';
-                } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0 && row.is_add_account === 1) {
-                    status = 'add';
                 } else if (row.is_upgrade === 0 && row.is_prorate === 0 && row.new_subscription === 0) {
                     status = 'recurring';
                 }
