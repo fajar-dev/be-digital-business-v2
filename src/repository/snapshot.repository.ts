@@ -1,5 +1,5 @@
 import { Pool } from 'mysql2/promise';
-import { SnapshotData, ISnapshotRepository, SnapshotListFilters } from '../interface/snapshot.interface';
+import { SnapshotData, ISnapshotRepository, SnapshotListFilters, SnapshotUpdateData } from '../interface/snapshot.interface';
 
 export class SnapshotRepository implements ISnapshotRepository {
     constructor(private readonly dbPool: Pool) {}
@@ -215,9 +215,40 @@ export class SnapshotRepository implements ISnapshotRepository {
         return result;
     }
 
+    async updateSnapshot(ai: number, data: SnapshotUpdateData): Promise<any> {
+        const editableFields: (keyof SnapshotUpdateData)[] = [
+            'subscription', 'status', 'month_period', 'total_account',
+            'customer_id', 'customer_service_id', 'customer_company', 'contract_until_date',
+            'service_group_id', 'service_id', 'service_name', 'service_type',
+            'cross_sell_count', 'sales_id', 'manager_sales_id', 'implementator_id', 'modal'
+        ];
+
+        const setClauses: string[] = [];
+        const values: any[] = [];
+
+        for (const field of editableFields) {
+            if (field in data) {
+                setClauses.push(`${field} = ?`);
+                values.push(data[field]);
+            }
+        }
+
+        if (setClauses.length === 0) {
+            return null;
+        }
+
+        setClauses.push('is_adjust = true');
+
+        const query = `UPDATE snapshots SET ${setClauses.join(', ')} WHERE ai = ?`;
+        values.push(ai);
+
+        const [result] = await this.dbPool.query(query, values);
+        return result;
+    }
+
     async getSnapshotByManager(managerId: string, startDate: string, endDate: string): Promise<any[]> {
         const query = `
-            SELECT 
+            SELECT
                 s.*,
                 e.name AS sales_name,
                 e.photo_profile AS sales_photo

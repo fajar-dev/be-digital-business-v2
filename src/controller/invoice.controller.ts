@@ -2,6 +2,10 @@ import { Context } from "hono";
 import { ISnapshotService } from "../interface/snapshot.interface";
 import { ApiResponse } from "../helper/response";
 import { PeriodHelper } from "../helper/period";
+import { BadRequestException } from "../helper/exception";
+
+const VALID_SNAPSHOT_STATUSES = ['new', 'upgrade', 'termin', 'recurring', 'prorate', 'add', 'setup'];
+const VALID_SERVICE_TYPES = ['internal', 'resell'];
 
 export class InvoiceController {
     constructor(
@@ -75,4 +79,44 @@ export class InvoiceController {
         const data = await this.snapshotService.getResellInvoiceDetail(employeeId, startDate, endDate);
         return ApiResponse.success(c, data, "Resell invoice retrieved successfully");
     }
+
+    async updateSnapshot(c: Context) {
+        const ai = Number(c.req.param('ai'));
+
+        if (!ai || Number.isNaN(ai)) {
+            throw new BadRequestException('Valid ai is required');
+        }
+
+        const body = await c.req.json();
+
+        if (body.status !== undefined && !VALID_SNAPSHOT_STATUSES.includes(body.status)) {
+            throw new BadRequestException(`Invalid status. Must be one of: ${VALID_SNAPSHOT_STATUSES.join(', ')}`);
+        }
+
+        if (body.service_type !== undefined && !VALID_SERVICE_TYPES.includes(body.service_type)) {
+            throw new BadRequestException(`Invalid service_type. Must be one of: ${VALID_SERVICE_TYPES.join(', ')}`);
+        }
+
+        const result = await this.snapshotService.updateSnapshot(ai, body);
+
+        if (!result) {
+            throw new BadRequestException('No editable fields provided');
+        }
+
+        return ApiResponse.success(c, result, "Snapshot updated successfully");
+    }
+
+    async implementatorChurn(c: Context) {
+        const { month: monthQuery, year: yearQuery } = c.req.query();
+        const id = c.req.param('id');
+
+        if (!id) {
+            return ApiResponse.error(c, "id is required", 400);
+        }
+
+        const { startDate, endDate } = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
+        const data = await this.snapshotService.getImplementatorChurnList(id, startDate, endDate);
+        return ApiResponse.success(c, data, "Implementator churn list retrieved successfully");
+    }
+
 }

@@ -22,6 +22,8 @@ export interface SnapshotData {
     modal: number | null;
 }
 
+export type SnapshotUpdateData = Partial<Omit<SnapshotData, 'ai'>>;
+
 export interface SnapshotListFilters {
     search?: string;
     status?: string;
@@ -43,6 +45,7 @@ export interface ISnapshotRepository {
     getAccountManagers(): Promise<any[]>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;
+    updateSnapshot(ai: number, data: SnapshotUpdateData): Promise<any>;
 }
 
 export interface ISnapshotService {
@@ -51,12 +54,14 @@ export interface ISnapshotService {
     getInternalInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getResellInvoiceDetail(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getImplementatorInvoiceDetail(implementatorId: string, startDate: string, endDate: string): Promise<any>;
+    getImplementatorChurnList(implementatorId: string, startDate: string, endDate: string): Promise<any>;
     getImplementatorCommissionSummary(implementatorId: string, startDate: string, endDate: string): Promise<any>;
     getImplementatorCommissionYearlySummary(implementatorId: string, year: number): Promise<any[]>;
     getSalesCommissionSummary(employeeId: string, startDate: string, endDate: string): Promise<any>;
     getSalesCommissionYearlySummary(employeeId: string, year: number): Promise<any[]>;
     deleteSnapshotByDateRangeAndType(startDate: string, endDate: string, serviceType: 'internal' | 'resell'): Promise<any>;
     insertSnapshot(data: SnapshotData): Promise<any>;
+    updateSnapshot(ai: number, data: SnapshotUpdateData): Promise<any>;
     getManagerTeamSummary(employees: { employeeId: string; name: string; photoProfile: string }[], startDate: string, endDate: string): Promise<any>;
     getManagerTeamYearlySummary(employeesByMonth: { employeeId: string; name: string; photoProfile: string }[][], year: number): Promise<any>;
     getManagerCommissionSummary(employeeIds: string[], startDate: string, endDate: string): Promise<any>;

@@ -51,9 +51,11 @@ api.post('/employee/manager-mapping', authMiddleware, (c) => employeeController.
 
 // Protected Invoice Routes
 api.get('/invoice/snapshot', (c) => invoiceController.snapshotList(c));
+api.patch('/invoice/snapshot/:ai', authMiddleware, (c) => invoiceController.updateSnapshot(c));
 api.get('/invoice/account-manager', (c) => invoiceController.accountManagers(c));
 api.get('/invoice/:id/internal', (c) => invoiceController.internalInvoice(c));
 api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvoice(c));
+api.get('/invoice/:id/implementator/churn', (c) => invoiceController.implementatorChurn(c));
 api.get('/invoice/:id/resell', (c) => invoiceController.resellInvoice(c));
 
 // Protected Commission Routes

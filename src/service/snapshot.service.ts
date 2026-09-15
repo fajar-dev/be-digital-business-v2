@@ -1,4 +1,4 @@
-import { ISnapshotRepository, ISnapshotService, SnapshotData, SnapshotListFilters } from '../interface/snapshot.interface';
+import { ISnapshotRepository, ISnapshotService, SnapshotData, SnapshotListFilters, SnapshotUpdateData } from '../interface/snapshot.interface';
 import { Calculate } from '../helper/calculate';
 import { INisService } from '../interface/nis.interface';
 import { PeriodHelper } from '../helper/period';
@@ -69,6 +69,8 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.implementator_photo || ''
                 },
                 subscription,
+                modal: row.service_type === 'resell' ? Number(row.modal) || 0 : null,
+                crossSellCount: row.service_type === 'internal' ? row.cross_sell_count : null,
                 mrc,
                 commissionPercentage,
                 commission: commissionAmount,
@@ -140,6 +142,20 @@ export class SnapshotService implements ISnapshotService {
                 isAdjust: Boolean(row.is_adjust)
             };
         });
+    }
+
+    async getImplementatorChurnList(implementatorId: string, startDate: string, endDate: string): Promise<any> {
+        const rows = await this.nisService.getChurnListByImplementator(implementatorId, startDate, endDate);
+
+        return rows.map(row => ({
+            customerServiceId: row.customer_service_id,
+            customerId: row.customer_id,
+            customerCompany: row.customer_company,
+            serviceId: row.service_id,
+            serviceName: row.service_name,
+            activationDate: row.activation_date,
+            unregDate: row.unreg_date
+        }));
     }
 
     async getImplementatorCommissionSummary(implementatorId: string, startDate: string, endDate: string): Promise<any> {
@@ -483,6 +499,10 @@ export class SnapshotService implements ISnapshotService {
 
     async insertSnapshot(data: SnapshotData): Promise<any> {
         return await this.snapshotRepository.insertSnapshot(data);
+    }
+
+    async updateSnapshot(ai: number, data: SnapshotUpdateData): Promise<any> {
+        return await this.snapshotRepository.updateSnapshot(ai, data);
     }
 
     async getManagerTeamSummary(employees: { employeeId: string; name: string; photoProfile: string }[], startDate: string, endDate: string): Promise<any> {

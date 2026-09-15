@@ -145,7 +145,8 @@ export class CommissionController {
 
         const period = this.periodHelper.getPeriodFromQuery(monthQuery, yearQuery);
         const staff = await this.employeeService.getStaffForPeriod(manager[0].id, period.year, period.month);
-        const employeeIds = staff.map((s: any) => s.employee_id);
+        // Manager sendiri diikutkan (bukan cuma tim), supaya konsisten dgn invoice pribadi manager (sales_id = manager).
+        const employeeIds = [...new Set([managerId, ...staff.map((s: any) => s.employee_id)])];
 
         const data = await this.snapshotService.getManagerCommissionSummary(employeeIds, period.startDate, period.endDate);
         return ApiResponse.success(c, data, "manager commission retrieved successfully");
@@ -172,7 +173,8 @@ export class CommissionController {
         const employeeIdsByMonth = await Promise.all(
             Array.from({ length: 12 }, async (_, idx) => {
                 const staff = await this.employeeService.getStaffForPeriod(manager[0].id, year, idx + 1);
-                return staff.map((s: any) => s.employee_id);
+                // Manager sendiri diikutkan (bukan cuma tim), supaya konsisten dgn invoice pribadi manager (sales_id = manager).
+                return [...new Set([managerId, ...staff.map((s: any) => s.employee_id)])];
             })
         );
 

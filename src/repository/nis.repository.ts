@@ -171,4 +171,27 @@ export class NisRepository implements INisRepository {
         const data = rows as any[];
         return data.length > 0 ? Number(data[0].total) : 0;
     }
+
+    async getChurnListByImplementator(implementatorId: string, startDate: string, endDate: string): Promise<any[]> {
+        const query = `
+            SELECT
+                cs.CustServId AS customer_service_id,
+                c.CustId AS customer_id,
+                c.CustCompany AS customer_company,
+                cs.ServiceId AS service_id,
+                s.ServiceType AS service_name,
+                cs.CustActivationDate AS activation_date,
+                cs.CustUnregDate AS unreg_date
+            FROM CustomerServices cs
+            LEFT JOIN Customer c ON c.CustId = cs.CustId
+            LEFT JOIN Services s ON s.ServiceId = cs.ServiceId
+            WHERE cs.ServiceId IN ('NWBUS', 'NWADV')
+            AND c.Surveyor = ?
+            AND cs.CustStatus = 'NA'
+            AND cs.CustUnregDate BETWEEN ? AND ?
+            ORDER BY cs.CustUnregDate DESC;
+        `;
+        const [rows] = await this.dbPool.query(query, [implementatorId, startDate, endDate]);
+        return rows as any[];
+    }
 }
