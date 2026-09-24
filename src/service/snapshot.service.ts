@@ -582,7 +582,7 @@ export class SnapshotService implements ISnapshotService {
         return results;
     }
 
-    async getManagerCommissionSummary(employeeIds: string[], startDate: string, endDate: string): Promise<any> {
+    async getManagerCommissionSummary(employeeIds: string[], startDate: string, endDate: string, managerId?: string): Promise<any> {
         // Hitung periode bulan lalu
         const start = new Date(startDate);
         const prevEnd = new Date(start);
@@ -615,18 +615,51 @@ export class SnapshotService implements ISnapshotService {
         const currentTotal = current.commissionNew + current.commissionRecurring;
         const previousTotal = previous.commissionNew + previous.commissionRecurring;
 
+        // "Cust Lama" = komisi & subscription pribadi manager sebagai sales (sales_id = manager).
+        // Dihitung PENUH (bukan dipotong 25%), lalu DITAMBAHKAN ke angka tim untuk jadi headline
+        // "Manager Commission" & "Total Subscription" (total: tim + pribadi manager).
+        let managerCurrentCommission = 0;
+        let managerPreviousCommission = 0;
+        let managerCurrentSubscription = 0;
+        let managerPreviousSubscription = 0;
+        let custLamaCommission = Calculate.trend(0, 0);
+        let custLamaSubscription = Calculate.trend(0, 0);
+
+        if (managerId) {
+            const [managerCurrent, managerPrevious] = await Promise.all([
+                this.aggregateSalesCommission(managerId, startDate, endDate),
+                this.aggregateSalesCommission(managerId, prevStartDate, prevEndDate)
+            ]);
+
+            managerCurrentCommission = managerCurrent.commissionNew + managerCurrent.commissionRecurring;
+            managerPreviousCommission = managerPrevious.commissionNew + managerPrevious.commissionRecurring;
+            custLamaCommission = Calculate.trend(managerCurrentCommission, managerPreviousCommission);
+
+            managerCurrentSubscription = managerCurrent.totalSubscription + managerCurrent.subscriptionRecurring;
+            managerPreviousSubscription = managerPrevious.totalSubscription + managerPrevious.subscriptionRecurring;
+            custLamaSubscription = Calculate.trend(managerCurrentSubscription, managerPreviousSubscription);
+        }
+
+        const managerCommissionCurrent = (currentTotal * 0.25) + managerCurrentCommission;
+        const managerCommissionPrevious = (previousTotal * 0.25) + managerPreviousCommission;
+
+        const subscriptionTotalCurrent = current.totalSubscription + current.subscriptionRecurring + managerCurrentSubscription;
+        const subscriptionTotalPrevious = previous.totalSubscription + previous.subscriptionRecurring + managerPreviousSubscription;
+
         return {
-            managerCommission: Calculate.trend(currentTotal * 0.25, previousTotal * 0.25),
+            managerCommission: Calculate.trend(managerCommissionCurrent, managerCommissionPrevious),
             commission: {
                 new: Calculate.trend(current.commissionNew, previous.commissionNew),
                 recurring: Calculate.trend(current.commissionRecurring, previous.commissionRecurring),
-                total: Calculate.trend(currentTotal, previousTotal)
+                total: Calculate.trend(currentTotal, previousTotal),
+                custLama: custLamaCommission
             },
             mrc: Calculate.trend(current.totalMrc, previous.totalMrc),
             subscription: {
                 new: Calculate.trend(current.totalSubscription, previous.totalSubscription),
                 recurring: Calculate.trend(current.subscriptionRecurring, previous.subscriptionRecurring),
-                total: Calculate.trend(current.totalSubscription + current.subscriptionRecurring, previous.totalSubscription + previous.subscriptionRecurring)
+                total: Calculate.trend(subscriptionTotalCurrent, subscriptionTotalPrevious),
+                custLama: custLamaSubscription
             },
             newCustomer: Calculate.trend(current.newCustomer, previous.newCustomer),
             newAccount: Calculate.trend(current.newAccount, previous.newAccount)

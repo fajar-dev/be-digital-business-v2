@@ -64,6 +64,6 @@ export interface ISnapshotService {
     updateSnapshot(ai: number, data: SnapshotUpdateData): Promise<any>;
     getManagerTeamSummary(employees: { employeeId: string; name: string; photoProfile: string }[], startDate: string, endDate: string): Promise<any>;
     getManagerTeamYearlySummary(employeesByMonth: { employeeId: string; name: string; photoProfile: string }[][], year: number): Promise<any>;
-    getManagerCommissionSummary(employeeIds: string[], startDate: string, endDate: string): Promise<any>;
+    getManagerCommissionSummary(employeeIds: string[], startDate: string, endDate: string, managerId?: string): Promise<any>;
     getManagerCommissionYearlySummary(employeeIdsByMonth: string[][], year: number): Promise<any[]>;
 }
