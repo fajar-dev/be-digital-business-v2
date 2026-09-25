@@ -9,6 +9,17 @@ export class SnapshotService implements ISnapshotService {
         private readonly nisService: INisService
     ) {}
 
+    /**
+     * Basis nominal komisi: kalau base_commission diisi manual (lewat edit /invoice), pakai itu.
+     * Kalau tidak (null/undefined), fallback ke subscription. Cuma memengaruhi nominal komisi
+     * akhir -- MRC, subscription yang ditampilkan, margin/price, dst tetap dari subscription asli.
+     */
+    private commissionBase(row: any, subscription: number): number {
+        return (row.base_commission !== null && row.base_commission !== undefined)
+            ? Number(row.base_commission)
+            : subscription;
+    }
+
     async getSnapshotList(filters: SnapshotListFilters): Promise<any> {
         const [rows, total, newResellServiceIdRows] = await Promise.all([
             this.snapshotRepository.getSnapshots(filters),
@@ -31,12 +42,12 @@ export class SnapshotService implements ISnapshotService {
             let commissionPercentage = 0;
             let mrc = 0;
             if (row.service_type === 'resell') {
-                const res = Calculate.resellSalesCommission(status, subscription, Number(row.total_account) || 1, Number(row.modal) || 0);
+                const res = Calculate.resellSalesCommission(status, subscription, Number(row.total_account) || 1, Number(row.modal) || 0, this.commissionBase(row, subscription));
                 commissionAmount = res.commissionAmount;
                 commissionPercentage = res.commissionPercentage;
                 mrc = this.resellMrc(row, newResellServiceIds, filters.startDate || '');
             } else {
-                const res = Calculate.internalSalesCommission(status, subscription, row.cross_sell_count, monthPeriod);
+                const res = Calculate.internalSalesCommission(status, this.commissionBase(row, subscription), row.cross_sell_count, monthPeriod);
                 commissionAmount = res.commissionAmount;
                 commissionPercentage = res.commissionPercentage;
                 mrc = ['recurring', 'termin', 'setup'].includes(status) ? 0 : Calculate.mrc(subscription, monthPeriod);
@@ -71,6 +82,7 @@ export class SnapshotService implements ISnapshotService {
                 subscription,
                 modal: row.service_type === 'resell' ? Number(row.modal) || 0 : null,
                 crossSellCount: row.service_type === 'internal' ? row.cross_sell_count : null,
+                baseCommission: row.base_commission !== null && row.base_commission !== undefined ? Number(row.base_commission) : null,
                 mrc,
                 commissionPercentage,
                 commission: commissionAmount,
@@ -109,7 +121,7 @@ export class SnapshotService implements ISnapshotService {
             const monthPeriod = Number(row.month_period) || 1;
 
             const { implementatorCommission, implementatorCommissionPercentage } = Calculate.implementatorCommission(
-                row.status, subscription, churnCount, monthPeriod
+                row.status, this.commissionBase(row, subscription), churnCount, monthPeriod
             );
 
             return {
@@ -136,6 +148,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.sales_photo || ''
                 },
                 subscription,
+                baseCommission: row.base_commission !== null && row.base_commission !== undefined ? Number(row.base_commission) : null,
                 mrc: ['recurring', 'termin', 'setup'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage: implementatorCommissionPercentage,
                 commission: implementatorCommission,
@@ -226,7 +239,7 @@ export class SnapshotService implements ISnapshotService {
             const status = row.status;
 
             const { implementatorCommission } = Calculate.implementatorCommission(
-                status, subscription, churnCount, monthPeriod
+                status, this.commissionBase(row, subscription), churnCount, monthPeriod
             );
 
             if (status === 'recurring') {
@@ -320,7 +333,7 @@ export class SnapshotService implements ISnapshotService {
             const status = row.status;
 
             const { commissionAmount } = Calculate.internalSalesCommission(
-                status, subscription, row.cross_sell_count, monthPeriod
+                status, this.commissionBase(row, subscription), row.cross_sell_count, monthPeriod
             );
 
             if (status === 'recurring') {
@@ -344,7 +357,7 @@ export class SnapshotService implements ISnapshotService {
             const status = row.status;
 
             const { commissionAmount } = Calculate.resellSalesCommission(
-                status, subscription, Number(row.total_account) || 1, Number(row.modal) || 0
+                status, subscription, Number(row.total_account) || 1, Number(row.modal) || 0, this.commissionBase(row, subscription)
             );
 
             if (status === 'recurring') {
@@ -372,7 +385,7 @@ export class SnapshotService implements ISnapshotService {
             const monthPeriod = Number(row.month_period) || 1;
 
             const { commissionAmount, commissionPercentage } = Calculate.internalSalesCommission(
-                row.status, subscription, row.cross_sell_count, monthPeriod
+                row.status, this.commissionBase(row, subscription), row.cross_sell_count, monthPeriod
             );
 
             return {
@@ -399,6 +412,7 @@ export class SnapshotService implements ISnapshotService {
                     photoProfile: row.implementator_photo_profile || ''
                 },
                 subscription,
+                baseCommission: row.base_commission !== null && row.base_commission !== undefined ? Number(row.base_commission) : null,
                 mrc: ['recurring', 'termin'].includes(row.status) ? 0 : Calculate.mrc(subscription, monthPeriod),
                 commissionPercentage,
                 commission: commissionAmount,
@@ -461,7 +475,7 @@ export class SnapshotService implements ISnapshotService {
             const modal = Number(row.modal) || 0;
 
             const { commissionAmount, commissionPercentage, price, markup, margin } = Calculate.resellSalesCommission(
-                row.status, subscription, Number(row.total_account) || 1, modal
+                row.status, subscription, Number(row.total_account) || 1, modal, this.commissionBase(row, subscription)
             );
 
             return {
@@ -485,6 +499,7 @@ export class SnapshotService implements ISnapshotService {
                 price,
                 markup,
                 margin,
+                baseCommission: row.base_commission !== null && row.base_commission !== undefined ? Number(row.base_commission) : null,
                 mrc: this.resellMrc(row, newResellServiceIds, startDate),
                 commissionPercentage,
                 commission: commissionAmount,

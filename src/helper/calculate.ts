@@ -103,13 +103,18 @@ export class Calculate {
      * - markup = price - modal (null jika recurring, 0 jika modal = 0)
      * - margin: (markup/price)*100, default 2.5% jika modal = 0
      * - Komisi: recurring 0.5%, margin >= 15% → 5%, >= 10% → 4%, < 10% → 2.5%
+     * - commissionBase (opsional): kalau diisi (base_commission manual dari edit /invoice),
+     *   nominal komisi dihitung dari nilai ini, BUKAN subscription. Price/markup/margin/tier
+     *   rate tetap dari subscription asli (tidak terpengaruh).
      */
     static resellSalesCommission(
         status: SnapshotStatus,
         subscription: number,
         totalAccount: number,
-        modal: number
+        modal: number,
+        commissionBase?: number
     ): { commissionAmount: number; commissionPercentage: number; price: number | null; markup: number | null; margin: number | null } {
+        const base = commissionBase ?? subscription;
         const isNewUpgradeProrate = ['new', 'prorate', 'upgrade'].includes(status);
 
         let price: number | null = null;
@@ -149,7 +154,7 @@ export class Calculate {
         }
 
         return {
-            commissionAmount: subscription * (commissionPercentage / 100),
+            commissionAmount: base * (commissionPercentage / 100),
             commissionPercentage,
             price,
             markup,

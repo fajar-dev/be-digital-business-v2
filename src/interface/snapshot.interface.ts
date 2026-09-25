@@ -20,6 +20,9 @@ export interface SnapshotData {
     manager_sales_id: string | null;
     implementator_id: string | null;
     modal: number | null;
+    // Diisi manual lewat edit /invoice saja (job sync tidak pernah mengisi/mengubah ini).
+    // Kalau terisi, dipakai sebagai basis nominal komisi menggantikan subscription.
+    base_commission?: number | null;
 }
 
 export type SnapshotUpdateData = Partial<Omit<SnapshotData, 'ai'>>;
