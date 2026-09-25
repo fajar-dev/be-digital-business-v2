@@ -32,7 +32,17 @@ async function syncEmployees() {
         // Remove duplicates if any (based on employeeId)
         const uniqueEmployeesMap = new Map();
         for (const emp of allEmployees) {
-            uniqueEmployeesMap.set(emp.employeeId, emp);
+            if (uniqueEmployeesMap.has(emp.employeeId)) {
+                const existing = uniqueEmployeesMap.get(emp.employeeId);
+                uniqueEmployeesMap.set(emp.employeeId, {
+                    ...existing,
+                    ...emp,
+                    hasDashboard: Boolean(existing.hasDashboard || emp.hasDashboard),
+                    isAdmin: Boolean(existing.isAdmin || emp.isAdmin),
+                });
+            } else {
+                uniqueEmployeesMap.set(emp.employeeId, emp);
+            }
         }
         const uniqueEmployees = Array.from(uniqueEmployeesMap.values());
 

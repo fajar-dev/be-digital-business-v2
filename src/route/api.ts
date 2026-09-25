@@ -5,6 +5,7 @@ import { InvoiceController } from '../controller/invoice.controller';
 import { CommissionController } from '../controller/commission.controller';
 import { AdditionalController } from '../controller/additional.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
+import { adminMiddleware } from '../middleware/admin.middleware';
 import { SnapshotRepository } from '../repository/snapshot.repository';
 import { SnapshotService } from '../service/snapshot.service';
 import { EmployeeRepository } from '../repository/employee.repository';
@@ -50,8 +51,8 @@ api.get('/employee/:id/hierarchy', authMiddleware, (c) => employeeController.get
 api.post('/employee/manager-mapping', authMiddleware, (c) => employeeController.setManagerMapping(c));
 
 // Protected Invoice Routes
-api.get('/invoice/snapshot', (c) => invoiceController.snapshotList(c));
-api.patch('/invoice/snapshot/:ai', authMiddleware, (c) => invoiceController.updateSnapshot(c));
+api.get('/invoice/snapshot', authMiddleware, adminMiddleware, (c) => invoiceController.snapshotList(c));
+api.patch('/invoice/snapshot/:ai', authMiddleware, adminMiddleware, (c) => invoiceController.updateSnapshot(c));
 api.get('/invoice/account-manager', (c) => invoiceController.accountManagers(c));
 api.get('/invoice/:id/internal', (c) => invoiceController.internalInvoice(c));
 api.get('/invoice/:id/implementator', (c) => invoiceController.implementatorInvoice(c));

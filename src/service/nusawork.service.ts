@@ -131,6 +131,7 @@ export class NusaworkService implements INusaworkService {
             jobLevel: emp.job_level,
             branch: emp.branch_name,
             managerId: null,
+            isAdmin: true,
         }));
     }
 }

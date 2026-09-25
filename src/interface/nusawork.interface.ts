@@ -10,6 +10,7 @@ export interface Employee {
     branch: string;
     managerId: number | string | null;
     hasDashboard?: boolean;
+    isAdmin?: boolean;
 }
 
 export interface INusaworkService {

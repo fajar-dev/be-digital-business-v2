@@ -18,9 +18,10 @@ export class EmployeeRepository implements IEmployeeRepository {
                 job_level,
                 branch,
                 manager_id,
-                has_dashboard
+                has_dashboard,
+                is_admin
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 employee_id = VALUES(employee_id),
                 name = VALUES(name),
@@ -31,7 +32,8 @@ export class EmployeeRepository implements IEmployeeRepository {
                 job_level = VALUES(job_level),
                 branch = VALUES(branch),
                 manager_id = VALUES(manager_id),
-                has_dashboard = VALUES(has_dashboard)
+                has_dashboard = VALUES(has_dashboard),
+                is_admin = VALUES(is_admin)
         `;
 
         const [rows] = await this.dbPool.query(query, [
@@ -45,7 +47,8 @@ export class EmployeeRepository implements IEmployeeRepository {
             data.jobLevel,
             data.branch,
             data.managerId ?? null,
-            data.hasDashboard ?? false
+            data.hasDashboard ?? false,
+            data.isAdmin ?? false
         ]);
 
         return rows;

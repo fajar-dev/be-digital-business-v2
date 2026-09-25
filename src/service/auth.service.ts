@@ -27,6 +27,15 @@ export class AuthService implements IAuthService {
         return ticket.getPayload();
     }
 
+    private formatUser(employee: any) {
+        if (!employee) return null;
+        return {
+            ...employee,
+            has_dashboard: Boolean(employee.has_dashboard),
+            is_admin: Boolean(employee.is_admin),
+        };
+    }
+
     async generateToken(employee: any) {
         const now = Math.floor(Date.now() / 1000);
         const accessTokenPayload = {
@@ -34,6 +43,7 @@ export class AuthService implements IAuthService {
             svp: employee.manager_id,
             email: employee.email,
             role: employee.job_position,
+            is_admin: Boolean(employee.is_admin),
             exp: now + 60 * 15, // 15 minutes
         };
         const refreshTokenPayload = {
@@ -74,7 +84,7 @@ export class AuthService implements IAuthService {
         return {
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
-            user: employee
+            user: this.formatUser(employee)
         };
     }
 
@@ -90,7 +100,7 @@ export class AuthService implements IAuthService {
         return {
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
-            user: employee
+            user: this.formatUser(employee)
         };
     }
 
@@ -107,7 +117,7 @@ export class AuthService implements IAuthService {
         return {
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
-            user: employee
+            user: this.formatUser(employee)
         };
     }
 
@@ -131,7 +141,7 @@ export class AuthService implements IAuthService {
         return {
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
-            user: employee
+            user: this.formatUser(employee)
         };
     }
 
@@ -150,6 +160,6 @@ export class AuthService implements IAuthService {
             throw new NotFoundException('User not found');
         }
 
-        return employee;
+        return this.formatUser(employee);
     }
 }
